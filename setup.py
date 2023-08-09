@@ -1,5 +1,5 @@
-from setuptools import setup, find_packages
 import codecs
+from setuptools import setup, find_packages
 
 
 def read_file(path: str) -> "list[str]":
