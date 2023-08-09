@@ -1,6 +1,7 @@
 from typing import Optional, Generator, Iterable
 import requests
 from requests.models import Response
+from danielutils import warning, threadify
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 # from googleapiclient.discovery import Resource  # type:ignore
@@ -8,13 +9,14 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 from .media_item import GooglePhotosMediaItem
 from .album import GooglePhotosAlbum
 from .utils import UploadToken, Url, Path, declare, split_iterable
-
+from .pool_executor import ThreadPoolExecutor
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",
     "https://www.googleapis.com/auth/photoslibrary.sharing"
 ]
 EMPTY_PROMPT_MESSAGE = ""
+DEFAULT_NUM_WORKERS: int = 2
 
 
 class GooglePhotos:
@@ -177,9 +179,9 @@ class GooglePhotos:
         return response.json()
 
     @declare("Uploading images in batches")
-    def upload_media_batch(self, album: GooglePhotosAlbum, paths: Iterable[Path]) -> Iterable[Response]:
+    def upload_media_batch(self, album: GooglePhotosAlbum, paths: Iterable[Path],
+                           num_workers: int = DEFAULT_NUM_WORKERS) -> Iterable[Response]:
         """uploads media in batches of 50 images at once
-
         Args:
             album (GooglePhotosAlbum): the album wrapper object
             paths (Iterable[Path]): the iterable which has the paths to the media
@@ -187,10 +189,16 @@ class GooglePhotos:
         Yields:
             Generator[dict, None, None]: yields the results of each batch request. empty dict means success
         """
+        # see https://developers.google.com/photos/library/reference/rest/v1/albums/batchAddMediaItems
         MAX_SIZE: int = 50
+        if not (0 < num_workers <= MAX_SIZE):
+            warning(
+                f"Invalid value for number of workers, using {DEFAULT_NUM_WORKERS=}")
+            num_workers = DEFAULT_NUM_WORKERS
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album.id}:batchAddMediaItems"
         responses = []
-        for batch in split_iterable(paths, MAX_SIZE):
+
+        def worker(batch: list[str]):
             media_ids = []
             for path in batch:
                 media = self._get_media_item_id(
@@ -204,6 +212,13 @@ class GooglePhotos:
                 }
             )
             responses.append(response)
+        for batch in split_iterable(paths, MAX_SIZE):
+            worker(batch)
+        # ====== NEED TO FIND HOW TO ENABLE THIS ======
+        # pool = ThreadPoolExecutor(num_workers, worker)
+        # for batch in split_iterable(paths, MAX_SIZE):
+        #     pool.submit((batch,))
+        # pool.run()
         return responses
 
     # def delete_album(self, album: GooglePhotosAlbum) -> Response:

@@ -42,11 +42,19 @@ class GooglePhotosAlbum:
 
     @staticmethod
     @declare("Creating album from name")
-    def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str) -> Generator["GooglePhotosAlbum", None, None]:
+    def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False) -> Generator["GooglePhotosAlbum", None, None]:
         'will return all albums with the specified name'
+        has_yielded: bool = False
         for album in gp.get_albums():
             if album.title == album_name:
+                has_yielded = True
                 yield album
+
+        if create_on_missing:
+            if not has_yielded:
+                yield gp.create_album(album_name)
+
+        return
 
     def __init__(self, gp: "gp_wrapper.gp.GooglePhotos", id: AlbumId, title: str, productUrl: str, isWriteable: bool,
                  mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
