@@ -34,10 +34,29 @@ class GooglePhotosAlbum:
     """A wrapper class over Album object
     """
     @staticmethod
+    @declare
+    def _get_albums_helper(gp: "gp_wrapper.gp.GooglePhotos"):
+        endpoint = "https://photoslibrary.googleapis.com/v1/albums"
+        # body: dict[str, str | int] = {
+        #     # "pageSize": page_size,
+        #     # "excludeNonAppCreatedData": excludeNonAppCreatedData
+        # }
+        # if prevPageToken is not None:
+        #     body["pageToken"] = prevPageToken
+        response = gp.get(endpoint,  headers=gp._construct_headers())
+        j = response.json()
+        if "albums" not in j:
+            # TODO
+            return ""
+        for dct in j["albums"]:
+            yield GooglePhotosAlbum.from_dict(gp, dct)
+        return j["nextPageToken"]
+
+    @staticmethod
     @declare("Getting albums")
     def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE,
                        prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False)\
-            -> Generator["GooglePhotosAlbum", None, NextPageToken]:
+            -> Generator["GooglePhotosAlbum", None, Optional[NextPageToken]]:
         """gets all albums serially
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -66,11 +85,12 @@ class GooglePhotosAlbum:
         response = gp.get(endpoint,  headers=gp._construct_headers())
         j = response.json()
         if "albums" not in j:
-            # TODO
-            return ""
+            return None
         for dct in j["albums"]:
             yield GooglePhotosAlbum.from_dict(gp, dct)
-        return j["nextPageToken"]
+        if "nextPageToken" in j:
+            return j["nextPageToken"]
+        return None
 
     @staticmethod
     def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GooglePhotosAlbum":
