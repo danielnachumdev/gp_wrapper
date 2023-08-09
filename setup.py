@@ -12,21 +12,22 @@ DESCRIPTION = 'A Google Photos API wrapper library'
 VERSION = "0.1.0"
 LONG_DESCRIPTION = '\n'.join(read_file(README_PATH))
 requirements = read_file("./requirements/publish.txt")
+PACKAGE = "gp_wrapper"
 setup(
-    name="gp_wrapper",
+    name=PACKAGE,
     version=VERSION,
     author="danielnachumdev",
     author_email="<danielnachumdev@gmail.com>",
     description=DESCRIPTION,
     long_description=open('README.md', "r", encoding="utf8").read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/danielnachumdev/gp_wrapper',
+    url=f'https://github.com/danielnachumdev/{PACKAGE}',
     license="MIT License",
     packages=find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests", "archive/"]),
     install_requires=[""],
     platforms=["All"],
-    keywords=['functions', 'decorators', 'methods', 'classes', 'metaclasses'],
+    keywords=['functions', 'methods', 'classes', 'API'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
