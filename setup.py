@@ -25,7 +25,7 @@ setup(
     license="MIT License",
     packages=find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests", "archive/"]),
-	install_requires=['google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib', 'danielutils', 'requests'],
+    install_requires=['google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib', 'danielutils', 'requests'],  # noqa
     keywords=['functions', 'methods', 'classes', 'API'],
     classifiers=[
         "Development Status :: 3 - Alpha",

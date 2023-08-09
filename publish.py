@@ -90,7 +90,7 @@ def main(ver: str):
         with open(SETUP, "w", encoding="utf8") as f:
             for line in lines:
                 if line.strip().startswith("install_requires"):
-                    f.write(f"\tinstall_requires={reqs},\n")
+                    f.write(f"\tinstall_requires={reqs},  #noqa\n")
                 else:
                     f.write(line)
 
