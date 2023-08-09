@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "gp_wrapper"
+version = "0.1.0"
+authors = [
+  { name="danielnachumdev", email="danielnachumdev@gmail.com" },
+]
+description = "A Google Photos API wrapper library"
+readme = "README.md"
+requires-python = ">=3.8.17"
+classifiers = [
+   "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    # "Operating System :: Unix",
+    # "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/danielnachumdev/gp_wrapper"
+"Bug Tracker" = "https://github.com/danielnachumdev/gp_wrapper/issues"
