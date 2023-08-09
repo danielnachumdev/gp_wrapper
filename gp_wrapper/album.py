@@ -71,7 +71,7 @@ class GooglePhotosAlbum:
         return f"{self.__class__.__name__} {json.dumps(self.__dict__, indent=4,default=json_default)}"
 
     @declare("Adding media to album")
-    def add_media(self, paths: Iterable[Path]) -> Iterable[Response]:
+    def add_media(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
         return self.gp.upload_media_batch(self, paths)
 
     @declare("Adding an enrichment to an Album")

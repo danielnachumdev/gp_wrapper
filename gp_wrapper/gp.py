@@ -13,7 +13,8 @@ from .pool_executor import ThreadPoolExecutor
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",
-    "https://www.googleapis.com/auth/photoslibrary.sharing"
+    "https://www.googleapis.com/auth/photoslibrary.sharing",
+    "https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata"
 ]
 EMPTY_PROMPT_MESSAGE = ""
 DEFAULT_NUM_WORKERS: int = 2
@@ -180,7 +181,7 @@ class GooglePhotos:
 
     @declare("Uploading images in batches")
     def upload_media_batch(self, album: GooglePhotosAlbum, paths: Iterable[Path],
-                           num_workers: int = DEFAULT_NUM_WORKERS) -> Iterable[Response]:
+                           num_workers: int = DEFAULT_NUM_WORKERS) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
         """uploads media in batches of 50 images at once
         Args:
             album (GooglePhotosAlbum): the album wrapper object
@@ -189,13 +190,14 @@ class GooglePhotos:
         Yields:
             Generator[dict, None, None]: yields the results of each batch request. empty dict means success
         """
-        # see https://developers.google.com/photos/library/reference/rest/v1/albums/batchAddMediaItems
+        # see https://developers.google.com/photos/library/reference/rest/v1/albums/batchAddMediaItems#request-body
         MAX_SIZE: int = 50
         if not (0 < num_workers <= MAX_SIZE):
             warning(
                 f"Invalid value for number of workers, using {DEFAULT_NUM_WORKERS=}")
             num_workers = DEFAULT_NUM_WORKERS
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album.id}:batchAddMediaItems"
+        all_media = []
         responses = []
 
         def worker(batch: list[str]):
@@ -203,6 +205,7 @@ class GooglePhotos:
             for path in batch:
                 media = self._get_media_item_id(
                     self._upload_media_item(path))
+                all_media.append(media)
                 media_ids.append(media.id)
             headers = self._construct_headers()
             response = self.post(
@@ -219,7 +222,7 @@ class GooglePhotos:
         # for batch in split_iterable(paths, MAX_SIZE):
         #     pool.submit((batch,))
         # pool.run()
-        return responses
+        return responses, all_media
 
     # def delete_album(self, album: GooglePhotosAlbum) -> Response:
     #     raise NotImplementedError(
