@@ -97,7 +97,7 @@ def main(ver: str):
     print("Created dist successfully")
     # # twine upload dist/...
     ret, stdout, stderr = cm("wt.exe",
-                             "twine", "upload", "--config-file", ".pypirc", f"dist/{PACKAGE}-{ver}.tar.gz")
+                             "twine", "upload", "--config-file", "./.pypirc", f"./dist/{PACKAGE}-{ver}.tar.gz")
 
 
 def pytest() -> bool:
