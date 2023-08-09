@@ -19,7 +19,7 @@ def get_latest(ver: str = '0.0.0') -> str:
     """
     if not directory_exists(DIST):
         return ver
-    DIST_PATTERN = r"danielutils-(\d+)\.(\d+)\.(\d+)\.tar\.gz"
+    DIST_PATTERN = r"gp_wrapper-(\d+)\.(\d+)\.(\d+)\.tar\.gz"
     best = ver
     for filename in get_files(DIST):
         a1, b1, c1 = best.split(".")
@@ -64,8 +64,8 @@ def main(ver: str):
             lines = read_file(README)
             with open(README, "w", encoding="utf8") as f:
                 for line in lines:
-                    if line.startswith("# danielutils v="):
-                        f.write(f"# danielutils v={ver}\n")
+                    if line.startswith("# gp_wrapper v="):
+                        f.write(f"# gp_wrapper v={ver}\n")
                     else:
                         f.write(line)
 
@@ -95,7 +95,7 @@ def main(ver: str):
     print("Created dist successfully")
     # # twine upload dist/...
     ret, stdout, stderr = cm("wt.exe",
-                             "twine", "upload", "--config-file", ".pypirc", f"dist/danielutils-{ver}.tar.gz")
+                             "twine", "upload", "--config-file", ".pypirc", f"dist/gp_wrapper-{ver}.tar.gz")
 
 
 def pytest() -> bool:
@@ -138,7 +138,7 @@ def pylint(config_file_path: str = "./.pylintrc") -> None:
     """
     print("running pylint...")
     for i, line in cmrt("pylint", "--rcfile", config_file_path,
-                        "./danielutils", ">", f"{REPORTS}/pylint.txt"):
+                        "./gp__wrapper", ">", f"{REPORTS}/pylint.txt"):
         print(line.decode(), end="")
 
 
@@ -159,7 +159,7 @@ def mypy(config_file_path: str = "mypy.ini") -> None:
     print("running mypy")
     with open(f"{REPORTS}/mypy.txt", "w", encoding="utf8") as f:
         for i, line in cmrt("mypy", "--config-file", config_file_path,
-                            "./danielutils"):
+                            "./gp_wrapper"):
             f.write(line.decode())
             print(line.decode(), end="")
 
