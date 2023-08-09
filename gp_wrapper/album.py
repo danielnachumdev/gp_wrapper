@@ -4,7 +4,7 @@ from typing import Optional, Generator, Iterable
 from requests import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .media_item import MediaItemID, GooglePhotosMediaItem
-from .utils import AlbumId, Path, declare, json_default
+from .utils import AlbumId, Path, declare, json_default, NextPageToken
 from .enrichment_item import EnrichmentItem
 
 
@@ -27,17 +27,68 @@ class EnrichmentType(enum.Enum):
     MAP_ENRICHMENT = "mapEnrichment"
 
 
+DEFAULT_PAGE_SIZE: int = 20
+
+
 class GooglePhotosAlbum:
     """A wrapper class over Album object
     """
+    @staticmethod
+    @declare("Getting albums")
+    def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE, prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False) -> Generator["GooglePhotosAlbum", None, NextPageToken]:
+        """gets all albums serially
+
+        pageSize (int): Maximum number of albums to return in the response.
+            Fewer albums might be returned than the specified number. The default pageSize is 20, the maximum is 50.
+        pageToken (str): A continuation token to get the next page of the results.
+            Adding this to the request returns the rows after the pageToken.
+            The pageToken should be the value returned in the nextPageToken parameter in the response
+            to the listAlbums request.
+        excludeNonAppCreatedData (bool): If set, the results exclude media items that were not created by this app.
+            Defaults to false (all albums are returned).
+            This field is ignored if the photoslibrary.readonly.appcreateddata scope is used.
+
+        Returns:
+            NextPageToken: a token to supply to a future call to get albums after current end point in album list
+
+        Yields:
+            GooglePhotosAlbum: yields the albums one after the other
+        """
+        endpoint = "https://photoslibrary.googleapis.com/v1/albums"
+        body: dict[str, str | int] = {
+            # "pageSize": page_size,
+            # "excludeNonAppCreatedData": excludeNonAppCreatedData
+        }
+        if prevPageToken is not None:
+            body["pageToken"] = prevPageToken
+        response = gp.get(endpoint, json=body, headers=gp.json_headers())
+        j = response.json()
+        for dct in j["albums"]:
+            yield GooglePhotosAlbum.from_dict(gp, dct)
+        return j["nextPageToken"]
+
+    @staticmethod
+    def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GooglePhotosAlbum":
+        return GooglePhotosAlbum(
+            gp,
+            id=dct["id"],
+            title=dct["title"],
+            productUrl=dct["productUrl"],
+            isWriteable=dct["isWriteable"],
+            mediaItemsCount=dct["mediaItemsCount"] if "mediaItemsCount" in dct else 0,
+            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else "",
+            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
+        )
+
     @staticmethod
     @declare("Creating album from id")
     def from_id(gp: "gp_wrapper.gp.GooglePhotos", album_id: AlbumId) -> Optional["GooglePhotosAlbum"]:
         """will return the album with the specified id if it exists
         """
-        for album in gp.get_albums():
-            if album.id == album_id:
-                return album
+        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album_id}"
+        response = gp.get(endpoint, headers=gp._construct_headers())
+        if response.status_code == 200:
+            return GooglePhotosAlbum.from_dict(gp, response.json())
         return None
 
     @staticmethod

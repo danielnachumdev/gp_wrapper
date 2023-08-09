@@ -84,3 +84,4 @@ UploadToken = str
 Url = str
 AlbumId = str
 Path = str
+NextPageToken = str

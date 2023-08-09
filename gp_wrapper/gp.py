@@ -85,38 +85,8 @@ class GooglePhotos:
             headers=headers
         )
         dct = response.json()
-        album = GooglePhotosAlbum(
-            self,
-            id=dct["id"],
-            title=dct["title"],
-            productUrl=dct["productUrl"],
-            isWriteable=dct["isWriteable"],
-            mediaItemsCount=0,
-            coverPhotoBaseUrl="",
-            coverPhotoMediaItemId=""
-        )
+        album = GooglePhotosAlbum.from_dict(self, dct)
         return album
-
-    @declare("Getting all Albums")
-    def get_albums(self) -> Generator[GooglePhotosAlbum, None, None]:
-        headers = self._construct_headers()
-
-        response = self.get(
-            GooglePhotos.ALBUMS_ENDPOINT,
-            headers=headers
-        )
-        albums_data = response.json().get('albums', [])
-        for dct in albums_data:
-            yield GooglePhotosAlbum(
-                self,
-                id=dct["id"],
-                title=dct["title"],
-                productUrl=dct["productUrl"],
-                isWriteable=dct["isWriteable"],
-                mediaItemsCount=dct["mediaItemsCount"] if "mediaItemsCount" in dct else 0,
-                coverPhotoBaseUrl=dct["coverPhotoBaseUrl"],
-                coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
-            )
 
     @declare
     def _upload_media_item(self, media_path: Path) -> UploadToken:
