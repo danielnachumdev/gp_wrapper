@@ -96,7 +96,7 @@ class GooglePhotosAlbum:
     def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False) -> Generator["GooglePhotosAlbum", None, None]:
         'will return all albums with the specified name'
         has_yielded: bool = False
-        for album in gp.get_albums():
+        for album in GooglePhotosAlbum.get_albums(gp):
             if album.title == album_name:
                 has_yielded = True
                 yield album
