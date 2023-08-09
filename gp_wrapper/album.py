@@ -35,7 +35,9 @@ class GooglePhotosAlbum:
     """
     @staticmethod
     @declare("Getting albums")
-    def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE, prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False) -> Generator["GooglePhotosAlbum", None, NextPageToken]:
+    def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE,
+                       prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False)\
+            -> Generator["GooglePhotosAlbum", None, NextPageToken]:
         """gets all albums serially
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -69,6 +71,15 @@ class GooglePhotosAlbum:
 
     @staticmethod
     def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GooglePhotosAlbum":
+        """creates a GooglePhotosAlbum object from a dict from a response object
+
+        Args:
+            gp (gp_wrapper.gp.GooglePhotos): the GooglePhotos object
+            dct (dict): the dict object containing the data
+
+        Returns:
+            GooglePhotosAlbum: the resulting object
+        """
         return GooglePhotosAlbum(
             gp,
             id=dct["id"],
@@ -93,7 +104,8 @@ class GooglePhotosAlbum:
 
     @staticmethod
     @declare("Creating album from name")
-    def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False) -> Generator["GooglePhotosAlbum", None, None]:
+    def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False)\
+            -> Generator["GooglePhotosAlbum", None, None]:
         'will return all albums with the specified name'
         has_yielded: bool = False
         for album in GooglePhotosAlbum.get_albums(gp):
@@ -123,10 +135,32 @@ class GooglePhotosAlbum:
 
     @declare("Adding media to album")
     def add_media(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
+        """a function to add media to the album
+
+        Args:
+            paths (Iterable[Path]): paths to media files
+
+        Returns:
+            tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]: responses per batch request.
+                the individual media items.
+        """
         return self.gp.upload_media_batch(self, paths)
 
     @declare("Adding an enrichment to an Album")
-    def add_enrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict, album_position: ALbumPosition, album_position_data: Optional[dict] = None) -> EnrichmentItem:
+    def add_enrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
+                       album_position: ALbumPosition, album_position_data: Optional[dict] = None) -> EnrichmentItem:
+        """A generic function to add an enrichment to an album
+
+        Args:
+            enrichment_type (EnrichmentType): the type of the enrichment
+            enrichment_data (dict): the data for the enrichment
+            album_position (ALbumPosition): where to add the enrichment
+            album_position_data (Optional[dict], optional): additional data maybe required for some of the options.
+                Defaults to None.
+
+        Returns:
+            EnrichmentItem: the item added
+        """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
         body: dict[str, dict] = {
             "newEnrichmentItem": {
@@ -145,7 +179,18 @@ class GooglePhotosAlbum:
         return EnrichmentItem(response.json()["enrichmentItem"]["id"])
 
     @declare("Adding description to album")
-    def add_description(self, description: str, relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM) -> EnrichmentItem:
+    def add_description(self, description: str, relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM) \
+            -> EnrichmentItem:
+        """a facade function that uses 'add_enrichment' to simplify adding a description
+
+        Args:
+            description (str): description to add
+            relative_position (ALbumPosition, optional): where to add the description. 
+                Defaults to ALbumPosition.FIRST_IN_ALBUM.
+
+        Returns:
+            EnrichmentItem: the resulting item
+        """
         return self.add_enrichment(
             EnrichmentType.TEXT_ENRICHMENT,
             {"text": description},
@@ -154,6 +199,15 @@ class GooglePhotosAlbum:
 
     @declare("Sharing an album")
     def share(self, isCollaborative: bool = True, isCommentable: bool = True) -> Response:
+        """share an album
+
+        Args:
+            isCollaborative (bool, optional): whether to allow other people to also edit the album. Defaults to True.
+            isCommentable (bool, optional): whether to allow other people to comment. Defaults to True.
+
+        Returns:
+            Response: _description_
+        """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
         body = {
             "sharedAlbumOptions": {
@@ -167,12 +221,25 @@ class GooglePhotosAlbum:
 
     @declare("Un-sharing an album")
     def unshare(self) -> Response:
+        """make a shared album private
+
+        Returns:
+            Response: resulting response
+        """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:unshare"
         response = self.gp.post(endpoint, headers=self.gp._construct_headers())
         return response
 
     @declare("Getting media in album")
     def get_media(self) -> Iterable[GooglePhotosMediaItem]:
+        """gets all media in album
+
+        Returns:
+            Iterable[GooglePhotosMediaItem]: all media of the album
+
+        Yields:
+            Iterator[Iterable[GooglePhotosMediaItem]]: _description_
+        """
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
         data = {
             "albumId": self.id
