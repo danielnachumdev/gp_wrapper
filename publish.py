@@ -6,6 +6,7 @@ TOML = "./pyproject.toml"
 README = "./README.md"
 DIST = "./dist"
 REPORTS = "./reports"
+REQS = "./requirements/publish.txt"
 
 PACKAGE = "gp_wrapper"
 
@@ -83,16 +84,27 @@ def main(ver: str):
         update_toml()
         update_setup()
 
+    def update_requirements() -> None:
+        lines = read_file(SETUP)
+        reqs = [l.strip() for l in read_file(REQS)]
+        with open(SETUP, "w", encoding="utf8") as f:
+            for line in lines:
+                if line.strip().startswith("install_requires"):
+                    f.write(f"\tinstall_requires={reqs},\n")
+                else:
+                    f.write(line)
+
     latest = get_latest(ver)
     if latest != ver:
         print(f"{ver} is not the latest version, found {latest}, cancelling...")
         exit()
     print("updating version in files...")
     update_version(ver)
+    update_requirements()
     print("Creating new distribution...")
     ret, stdout, stderr = cm("python", "setup.py", "sdist")
     if ret != 0:
-        print(stderr)
+        print(stderr.decode())
         exit()
     print("Created dist successfully")
     # # twine upload dist/...

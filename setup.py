@@ -9,7 +9,7 @@ def read_file(path: str) -> "list[str]":
 
 README_PATH = 'README.md'
 DESCRIPTION = 'A Google Photos API wrapper library'
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 LONG_DESCRIPTION = '\n'.join(read_file(README_PATH))
 requirements = read_file("./requirements/publish.txt")
 PACKAGE = "gp_wrapper"
@@ -25,8 +25,7 @@ setup(
     license="MIT License",
     packages=find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests", "archive/"]),
-    install_requires=requirements,
-    platforms=["All"],
+	install_requires=['google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib', 'danielutils', 'requests'],
     keywords=['functions', 'methods', 'classes', 'API'],
     classifiers=[
         "Development Status :: 3 - Alpha",
