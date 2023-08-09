@@ -65,6 +65,9 @@ class GooglePhotosAlbum:
         #     body["pageToken"] = prevPageToken
         response = gp.get(endpoint,  headers=gp._construct_headers())
         j = response.json()
+        if "albums" not in j:
+            # TODO
+            return ""
         for dct in j["albums"]:
             yield GooglePhotosAlbum.from_dict(gp, dct)
         return j["nextPageToken"]
