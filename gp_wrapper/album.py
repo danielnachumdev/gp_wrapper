@@ -1,7 +1,7 @@
 import json
 import enum
 from typing import Optional, Generator, Iterable
-from requests import Response
+from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .media_item import MediaItemID, GooglePhotosMediaItem
 from .utils import AlbumId, Path, declare, json_default, NextPageToken

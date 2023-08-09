@@ -1,6 +1,6 @@
 import json
 import enum
-from requests import Response
+from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .utils import MediaItemID, json_default, declare
 
