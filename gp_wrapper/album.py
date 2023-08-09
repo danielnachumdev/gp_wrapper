@@ -55,13 +55,13 @@ class GooglePhotosAlbum:
             GooglePhotosAlbum: yields the albums one after the other
         """
         endpoint = "https://photoslibrary.googleapis.com/v1/albums"
-        body: dict[str, str | int] = {
-            # "pageSize": page_size,
-            # "excludeNonAppCreatedData": excludeNonAppCreatedData
-        }
-        if prevPageToken is not None:
-            body["pageToken"] = prevPageToken
-        response = gp.get(endpoint, json=body, headers=gp.json_headers())
+        # body: dict[str, str | int] = {
+        #     # "pageSize": page_size,
+        #     # "excludeNonAppCreatedData": excludeNonAppCreatedData
+        # }
+        # if prevPageToken is not None:
+        #     body["pageToken"] = prevPageToken
+        response = gp.get(endpoint,  headers=gp._construct_headers())
         j = response.json()
         for dct in j["albums"]:
             yield GooglePhotosAlbum.from_dict(gp, dct)
