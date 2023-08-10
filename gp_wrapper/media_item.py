@@ -136,7 +136,10 @@ class _GPMediaItem(Printable):
 
     @staticmethod
     def search(
-        gp: "gp_wrapper.gp.GooglePhotos") -> Iterable["GPMediaItem"]: ...
+            gp: "gp_wrapper.gp.GooglePhotos") -> Iterable["GPMediaItem"]:
+        endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
+        response = gp.request(RequestType.POST, endpoint)
+        response.raise_for_status()
 
     def __init__(self, gp: "gp_wrapper.gp.GooglePhotos", id: MediaItemID, productUrl: str,
                  mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
