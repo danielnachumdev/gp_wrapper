@@ -86,7 +86,21 @@ class _GPMediaItem(Printable):
             yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
-    def get(gp: "gp_wrapper.gp.GooglePhotos") -> "GPMediaItem": ...
+    def get(gp: "gp_wrapper.gp.GooglePhotos", mediaItemId: str) -> "GPMediaItem":
+        """Returns the media item for the specified media item identifier.
+
+        Args:
+            gp (gp_wrapper.gp.GooglePhotos): Google Photos object
+            mediaItemId (str): the id of the wanted item
+        Raises:
+            HTTPError: if the request fails
+        Returns:
+            GPMediaItem: the resulting object
+        """
+        endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{mediaItemId}"
+        response = gp.request(RequestType.GET, endpoint)
+        response.raise_for_status()
+        return GPMediaItem.from_dict(gp, response.json())
 
     def patch(self): ...
 

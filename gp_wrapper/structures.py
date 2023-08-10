@@ -3,8 +3,7 @@ import enum
 from datetime import datetime
 from typing import Optional
 from abc import ABC, abstractmethod
-import gp_wrapper.media_item  # pylint: disable=unused-import
-import gp_wrapper.helpers
+import gp_wrapper  # pylint: disable=unused-import
 
 
 class RequestType(enum.Enum):

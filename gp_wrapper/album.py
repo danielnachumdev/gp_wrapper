@@ -1,18 +1,16 @@
-import json
 from typing import Optional, Generator, Iterable
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .media_item import MediaItemID, GPMediaItem
 from .structures import AlbumId, Path, NextPageToken,\
-    PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT
-from .helpers import json_default
+    PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT, Printable
 from .enrichment_item import EnrichmentItem
 
 
 DEFAULT_PAGE_SIZE: int = 20
 
 
-class _GPAlbum:
+class _GPAlbum(Printable):
     """A wrapper class over Album object
     """
 
@@ -26,9 +24,6 @@ class _GPAlbum:
         self.mediaItemsCount = mediaItemsCount
         self.coverPhotoBaseUrl = coverPhotoBaseUrl
         self.coverPhotoMediaItemId = coverPhotoMediaItemId
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__} {json.dumps(self.__dict__, indent=4,default=json_default)}"
 
     def addEnrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
                       album_position: PositionType, album_position_data: Optional[dict] = None)\

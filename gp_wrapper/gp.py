@@ -7,12 +7,12 @@ from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 from .media_item import GPMediaItem
 from .album import GPAlbum
-from .structures import Path, RequestType,\
+from .structures import Path, RequestType, Printable,\
     EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, DEFAULT_NUM_WORKERS
 from .helpers import split_iterable
 
 
-class GooglePhotos:
+class GooglePhotos(Printable):
     """A wrapper class over GooglePhotos API to get 
     higher level abstraction for easy use
     """
