@@ -1,16 +1,11 @@
-import time
-import enum
 import functools
-from threading import Lock
-import threading
-from queue import Queue
+import time
 from typing import Optional, Union, Callable, TypeVar, Generator, Iterable, Any
 from typing_extensions import ParamSpec
-from danielutils import info, MinHeap
+from danielutils import info
+from .structures import Seconds, Milliseconds
 T = TypeVar("T")
 P = ParamSpec("P")
-Milliseconds = float
-Seconds = float
 
 
 def declare(obj: Union[Callable[P, T], Optional[str]] = None):
@@ -112,56 +107,11 @@ def slowdown(interval: Seconds):
             return res
         return wrapper
     return deco
-# def singleton(func: Callable[P, T]):
-#     has_been_called_already: bool = False
-#     res: T
-
-#     @functools.wraps(func)
-#     def wrapper(*args, **kwargs) -> T:
-#         nonlocal res, has_been_called_already
-#         if not has_been_called_already:
-#             res = func(*args, **kwargs)
-#             has_been_called_already = True
-#         return res
-#     return wrapper
 
 
-class RequestType(enum.Enum):
-    GET = "get"
-    POST = "post"
-    PATCH = "patch"
-
-
-class ALbumPosition(enum.Enum):
-    """enum to be used with GooglePhotosAlbum.add_enrichment to specify
-    the relative location of the enrichment in the album
-    """
-    POSITION_TYPE_UNSPECIFIED = "POSITION_TYPE_UNSPECIFIED"
-    FIRST_IN_ALBUM = "FIRST_IN_ALBUM"
-    LAST_IN_ALBUM = "LAST_IN_ALBUM"
-    AFTER_MEDIA_ITEM = "AFTER_MEDIA_ITEM"
-    AFTER_ENRICHMENT_ITEM = "AFTER_ENRICHMENT_ITEM"
-
-
-class EnrichmentType(enum.Enum):
-    """enum to be used with GooglePhotosAlbum.add_enrichment to specify the type of enrichment
-    """
-    TEXT_ENRICHMENT = "textEnrichment"
-    LOCATION_ENRICHMENT = "locationEnrichment"
-    MAP_ENRICHMENT = "mapEnrichment"
-
-
-class MaskTypes(enum.Enum):
-    """
-    available mask values to update for a media item
-    see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/patch#query-parameters
-    """
-    DESCRIPTION = "description"
-
-
-MediaItemID = str
-UploadToken = str
-Url = str
-AlbumId = str
-Path = str
-NextPageToken = str
+__all__ = [
+    "declare",
+    "split_iterable",
+    "json_default",
+    "slowdown"
+]
