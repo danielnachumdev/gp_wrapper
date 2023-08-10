@@ -1,5 +1,5 @@
-
 import enum
+from typing import Optional
 
 
 class RequestType(enum.Enum):
@@ -40,10 +40,39 @@ class RelativeItemType(enum.Enum):
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 
 
+class SimpleMediaItem:
+    def __init__(self, uploadToken: str, fileName: str) -> None:
+        self.uploadToken = uploadToken
+        self.fileName = fileName
+
+
+class NewMediaItem:
+    def __init__(self, description: str, simpleMediaItem: SimpleMediaItem) -> None:
+        self.description = description
+        self.simpleMediaItem = simpleMediaItem
+
+
+class AlbumPosition:
+    def __init__(self, position: PositionType, /, relativeMediaItemId: Optional[str] = None, relativeEnrichmentItemId: Optional[str] = None) -> None:
+        self.position = position
+        if (not relativeMediaItemId and not relativeEnrichmentItemId) \
+                or (relativeEnrichmentItemId and relativeEnrichmentItemId):
+            raise ValueError(
+                "Must supply exactly one between 'relativeMediaItemId' and 'relativeEnrichmentItemId'")
+        if relativeMediaItemId:
+            self.relativeMediaItemId = relativeMediaItemId
+        else:
+            self.relativeEnrichmentItemId = relativeEnrichmentItemId
+
+    def to_dict(self) -> dict:
+        dct = self.__dict__.copy()
+        dct["position"] = self.position.value
+        return dct
+
+
 Milliseconds = float
 Seconds = float
 MediaItemID = str
-uploadToken = str
 Url = str
 AlbumId = str
 Path = str
@@ -51,11 +80,6 @@ NextPageToken = str
 relativeMediaItemId = str
 relativeEnrichmentItemId = str
 Value = str
-AlbumPosition = tuple[PositionType, RelativeItemType, Value]
-Description = str
-fileName = str
-simpleMediaItem = tuple[uploadToken, fileName]
-NewMediaItem = tuple[Description, simpleMediaItem]
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",

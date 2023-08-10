@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 from .media_item import GooglePhotosMediaItem
 from .album import GooglePhotosAlbum
-from .structures import uploadToken, Path, RequestType,\
+from .structures import Path, RequestType,\
     EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, DEFAULT_NUM_WORKERS
 from .helpers import split_iterable
 
@@ -49,7 +49,7 @@ class GooglePhotos:
     def _json_headers(self) -> dict:
         return self._construct_headers({"Content-Type": "application/json"})
 
-    def _get_media_item_id(self, upload_token: uploadToken) -> GooglePhotosMediaItem:
+    def _get_media_item_id(self, upload_token: str) -> GooglePhotosMediaItem:
         payload = {
             "newMediaItems": [
                 {

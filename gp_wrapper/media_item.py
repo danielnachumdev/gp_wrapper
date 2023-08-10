@@ -3,7 +3,7 @@ from typing import Iterable, Optional, Union
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .structures import MediaItemID, MaskTypes, RequestType,\
-    Path, UPLOAD_MEDIA_ITEM_ENDPOINT, uploadToken, AlbumId, AlbumPosition, NewMediaItem,\
+    Path, UPLOAD_MEDIA_ITEM_ENDPOINT, AlbumId, AlbumPosition, NewMediaItem,\
     MEDIA_ITEMS_CREATE_ENDPOINT
 from .helpers import json_default, slowdown
 
@@ -13,7 +13,7 @@ class _GooglePhotosMediaItem:
     """
     @staticmethod
     @slowdown(2)
-    def _upload_media(gp: "gp_wrapper.gp.GooglePhotos", media: Path) -> uploadToken:
+    def _upload_media(gp: "gp_wrapper.gp.GooglePhotos", media: Path) -> str:
         headers = gp._json_headers()
         image_data = open(media, 'rb').read()
         response = gp.request(
@@ -50,11 +50,7 @@ class _GooglePhotosMediaItem:
             body["newMediaItems"].append(item)  # type:ignore
         if albumId and albumPosition:
             body["albumId"] = albumId
-            position_type, relative_item_type, value = albumPosition
-            body["albumPosition"] = {
-                "position": position_type.value,
-                relative_item_type.value: value
-            }
+            body["albumPosition"] = albumPosition.to_dict()
         elif not albumId and not albumPosition:
             pass
         else:
@@ -107,15 +103,14 @@ class GooglePhotosMediaItem(_GooglePhotosMediaItem):
 
     def _update(self, field_name: MaskTypes, field_value: str) -> Response:
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
-        headers = self.gp._json_headers()
-        body = {
+        payload = {
             field_name.value: field_value
         }
         params = {
             "updateMask": field_name.value
         }
         response = self.gp.request(
-            RequestType.PATCH, endpoint, json=body, headers=headers, params=params)
+            RequestType.PATCH, endpoint, json=payload, params=params)
         return response
 
 
