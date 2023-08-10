@@ -16,6 +16,16 @@ class MaskTypes(enum.Enum):
 class GooglePhotosMediaItem:
     """A wrapper class over Media Item object
     """
+    @staticmethod
+    def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GooglePhotosMediaItem":
+        return GooglePhotosMediaItem(
+            gp,
+            id=dct["id"],
+            productUrl=dct["productUrl"],
+            mimeType=dct["mimeType"],
+            mediaMetadata=dct["mediaMetadata"],
+            filename=dct["filename"],
+        )
 
     def __init__(self, gp: "gp_wrapper.gp.GooglePhotos", id: MediaItemID, productUrl: str,
                  mimeType: str, mediaMetadata: dict, filename: str, baseUrl: str = "") -> None:

@@ -275,15 +275,7 @@ class GooglePhotosAlbum:
         if "mediaItems" not in j:
             return []
         for dct in j["mediaItems"]:
-            yield GooglePhotosMediaItem(
-                self.gp,
-                id=dct["id"],
-                productUrl=dct["productUrl"],
-                baseUrl=dct["baseUrl"],
-                mimeType=dct["mimeType"],
-                mediaMetadata=dct["mediaMetadata"],
-                filename=dct["filename"],
-            )
+            yield GooglePhotosMediaItem.from_dict(self.gp, dct)
 
 
 __all__ = [

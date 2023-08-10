@@ -1,3 +1,5 @@
+import enum
+import json
 from typing import Optional, Generator, Iterable
 import requests
 from requests.models import Response
@@ -10,6 +12,7 @@ from .media_item import GooglePhotosMediaItem
 from .album import GooglePhotosAlbum
 from .utils import UploadToken, Url, Path, declare, split_iterable
 from .pool_executor import ThreadPoolExecutor
+from .requset_limiter import RequestLimiter
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",
@@ -18,6 +21,12 @@ SCOPES = [
 ]
 EMPTY_PROMPT_MESSAGE = ""
 DEFAULT_NUM_WORKERS: int = 2
+
+
+class RequestType(enum.Enum):
+    GET = "get"
+    POST = "post"
+    PATCH = "patch"
 
 
 class GooglePhotos:
@@ -29,7 +38,7 @@ class GooglePhotos:
     CREATE_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate"
 
     @declare("Initializing Google Photos service")
-    def __init__(self, client_secrets_path: str = "./client_secrets.json") -> None:
+    def __init__(self, client_secrets_path: str = "./client_secrets.json", quota: int = 30) -> None:
         flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(client_secrets_path, SCOPES)  # noqa
         self.credentials: Credentials = flow.run_local_server(
             port=0,
@@ -37,6 +46,17 @@ class GooglePhotos:
         )
         self.session = requests.Session()
         self.session.credentials = self.credentials  # type:ignore
+        self.limiter = RequestLimiter(quota)
+
+    def request(self, req_type: RequestType, endpoint: str, *args, **kwargs) -> Response:
+        if req_type == RequestType.GET:
+            return self.session.get(endpoint, *args, **kwargs)
+
+        if req_type == RequestType.POST:
+            return self.session.post(endpoint, *args, **kwargs)
+
+        if req_type == RequestType.PATCH:
+            return self.session.patch(endpoint, *args, **kwargs)
 
     def get(self, endpoint: Url, *args, **kwargs) -> Response:
         """wrapper function to create general purpose GET request with the current session
@@ -47,6 +67,7 @@ class GooglePhotos:
         Returns:
             Response: the response of the request
         """
+
         return self.session.get(endpoint, *args, **kwargs)
 
     def post(self, endpoint: Url, *args, **kwargs) -> Response:
@@ -117,15 +138,13 @@ class GooglePhotos:
             json=create_payload,
             headers=headers
         )
-        dct = response.json()['newMediaItemResults'][0]['mediaItem']
-        return GooglePhotosMediaItem(
-            self,
-            id=dct["id"],
-            productUrl=dct["productUrl"],
-            mimeType=dct["mimeType"],
-            mediaMetadata=dct["mediaMetadata"],
-            filename=dct["filename"],
-        )
+        j = response.json()
+        if "newMediaItemResults" in j:
+            dct = j['newMediaItemResults'][0]['mediaItem']
+            return GooglePhotosMediaItem.from_dict(self, dct)
+
+        print(json.dumps(j, indent=4))
+        raise AttributeError("'newMediaItemResults' not found in response")
 
     @declare("Uploading media to Album")
     def upload_media(self, album: GooglePhotosAlbum, media_path: Path) -> dict:
