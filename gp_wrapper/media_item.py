@@ -3,7 +3,7 @@ from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .structures import MaskTypes, RequestType, AlbumPosition, NewMediaItem,\
     MediaItemResult, MediaMetadata, Printable
-from .structures import MediaItemID, AlbumId, Path
+from .structures import MediaItemID, AlbumId, Path, NextPageToken
 from .structures import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from .helpers import slowdown
 
@@ -102,7 +102,37 @@ class _GPMediaItem(Printable):
         response.raise_for_status()
         return GPMediaItem.from_dict(gp, response.json())
 
-    def patch(self): ...
+    @staticmethod
+    def list(gp: "gp_wrapper.gp.GooglePhotos", pageSize: int = 25,
+             pageToken: Optional[str] = None) -> tuple[Generator["GPMediaItem", None, None], Optional[NextPageToken]]:
+        if not (0 < pageSize <= 100):
+            raise ValueError(
+                "pageSize must be between 0 and 100.\nsee https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
+        endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems"
+        params: dict = {
+            "pageSize": pageSize
+        }
+        if pageToken:
+            params["pageToken"] = pageToken
+        response = gp.request(RequestType.GET, endpoint,
+                              params=params, use_json_headers=False)
+        response.raise_for_status()
+        j = response.json()
+        mediaItems = j["mediaItems"] if "mediaItems" in j else []
+        nextPageToken = j["nextPageToken"] if "nextPageToken" in j else None
+        return (GPMediaItem.from_dict(gp, dct) for dct in mediaItems), nextPageToken
+
+    def patch(self, field_name: MaskTypes, field_value: str) -> Response:
+        endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
+        payload = {
+            field_name.value: field_value
+        }
+        params = {
+            "updateMask": field_name.value
+        }
+        response = self.gp.request(
+            RequestType.PATCH, endpoint, json=payload, params=params)
+        return response
 
     @staticmethod
     def search(
@@ -134,19 +164,7 @@ class GPMediaItem(_GPMediaItem):
         )
 
     def set_description(self, description: str) -> Response:
-        return self._update(MaskTypes.DESCRIPTION, description)
-
-    def _update(self, field_name: MaskTypes, field_value: str) -> Response:
-        endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
-        payload = {
-            field_name.value: field_value
-        }
-        params = {
-            "updateMask": field_name.value
-        }
-        response = self.gp.request(
-            RequestType.PATCH, endpoint, json=payload, params=params)
-        return response
+        return self.patch(MaskTypes.DESCRIPTION, description)
 
 
 __all__ = [
