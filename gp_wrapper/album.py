@@ -184,7 +184,7 @@ class GooglePhotosAlbum:
         except:
             return response, None
 
-    def add_description(self, description_parts: list[str],
+    def add_description(self, description_parts: Iterable[str],
                         relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM,
                         optional_additional_data: Optional[dict] = None) \
             -> Iterable[tuple[Optional[Response], Optional[EnrichmentItem]]]:
@@ -204,8 +204,17 @@ class GooglePhotosAlbum:
                 raise ValueError(
                     f"the description parts should be less than {HARD_LIMIT} characters"
                     "long because of a hard limit google employs")
+
+        chunks: list[str] = []
+        tmp_chunk = ""
+        for text in description_parts:
+            if len(tmp_chunk) + len(text) >= 1000:
+                chunks.append(tmp_chunk)
+                tmp_chunk = ""
+            tmp_chunk += text
+
         items = []
-        for part in description_parts[::-1]:
+        for part in chunks[::-1]:
             items.append(self.add_enrichment(
                 EnrichmentType.TEXT_ENRICHMENT,
                 {"text": part},
