@@ -1,9 +1,10 @@
 import json
 import enum
 from datetime import datetime
-from typing import Optional, ForwardRef
-
+from typing import Optional
 from abc import ABC, abstractmethod
+import gp_wrapper.media_item  # pylint: disable=unused-import
+import gp_wrapper.helpers
 
 
 class RequestType(enum.Enum):
@@ -44,12 +45,17 @@ class RelativeItemType(enum.Enum):
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 
 
+class Printable:
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__} {json.dumps(self.__dict__,indent=4,default=gp_wrapper.helpers.json_default)}"
+
+
 class Dictable(ABC):
     @abstractmethod
     def to_dict(self) -> dict: ...
 
 
-class SimpleMediaItem(Dictable):
+class SimpleMediaItem(Dictable, Printable):
     # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#SimpleMediaItem
     def __init__(self, uploadToken: str, fileName: str) -> None:
         self.uploadToken = uploadToken
@@ -59,7 +65,7 @@ class SimpleMediaItem(Dictable):
         return self.__dict__
 
 
-class NewMediaItem(Dictable):
+class NewMediaItem(Dictable, Printable):
     def __init__(self, description: str, simpleMediaItem: SimpleMediaItem) -> None:
         self.description = description
         self.simpleMediaItem = simpleMediaItem
@@ -71,7 +77,7 @@ class NewMediaItem(Dictable):
         }
 
 
-class AlbumPosition(Dictable):
+class AlbumPosition(Dictable, Printable):
     def __init__(self, position: PositionType = PositionType.FIRST_IN_ALBUM, /,
                  relativeMediaItemId: Optional[str] = None,
                  relativeEnrichmentItemId: Optional[str] = None) -> None:
@@ -92,24 +98,33 @@ class AlbumPosition(Dictable):
         return dct
 
 
-class NewMediaItemResult:
-    def __init__(self, uploadToken: str, status: dict[str, str],
-                 mediaItem: ForwardRef("GPMediaItem")) -> None:  # type:ignore
+class MediaItemResult(Printable):
+    @staticmethod
+    def from_dict(gp: "gp_wrapper.GooglePhotos", dct: dict) -> "MediaItemResult":
+        return MediaItemResult(
+            mediaItem=gp_wrapper.media_item.GPMediaItem(
+                gp, **dct["mediaItem"]),
+            status=dct["status"] if "status" in dct else None,
+            uploadToken=dct["uploadToken"] if "uploadToken" in dct else None,
+        )
+    def __init__(self, mediaItem: "gp_wrapper.media_item.GPMediaItem", status: Optional[dict[str, str]] = None,
+                 uploadToken: Optional[str] = None) -> None:  # type:ignore
         self.uploadToken = uploadToken
         self.status = status
         self.mediaItem = mediaItem
 
 
-class MediaMetadata(Dictable):
+class MediaMetadata(Dictable, Printable):
     @staticmethod
     def from_dict(dct: dict) -> "MediaMetadata":
         return MediaMetadata(**dct)
 
-    def __init__(self, creationTime: str, width: str, height: str) -> None:
+    def __init__(self, creationTime: str, width: str, height: str, photo: Optional[dict] = None) -> None:
         FORMAT = "%Y-%m-%dT%H:%M:%SZ"
         self.creationTime: datetime = datetime.strptime(creationTime, FORMAT)
         self.width: int = int(width)
         self.height: int = int(height)
+        self.photo = photo
 
     def to_dict(self) -> dict:
         return json.loads(json.dumps(self.__dict__))

@@ -1,14 +1,14 @@
-import json
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
-from .structures import MediaItemID, MaskTypes, RequestType,\
-    Path, UPLOAD_MEDIA_ITEM_ENDPOINT, AlbumId, AlbumPosition, NewMediaItem,\
-    MEDIA_ITEMS_CREATE_ENDPOINT, NewMediaItemResult, MediaMetadata
-from .helpers import json_default, slowdown
+from .structures import MaskTypes, RequestType, AlbumPosition, NewMediaItem,\
+    MediaItemResult, MediaMetadata, Printable
+from .structures import MediaItemID, AlbumId, Path
+from .structures import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
+from .helpers import slowdown
 
 
-class _GPMediaItem:
+class _GPMediaItem(Printable):
     """A wrapper class over Media Item object
     """
     @staticmethod
@@ -27,7 +27,7 @@ class _GPMediaItem:
     def batchCreate(
             gp: "gp_wrapper.gp.GooglePhotos", newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
                 albumPosition: Optional[AlbumPosition] = None) \
-            -> Generator[NewMediaItemResult, None, None]:
+            -> Generator[MediaItemResult, None, None]:
         """Creates one or more media items in a user's Google Photos library.
             This is the second step for creating a media item.\n
             For details regarding Step 1, uploading the raw bytes to a Google Server, see GPMediaItem.upload_media\n
@@ -65,15 +65,25 @@ class _GPMediaItem:
             RequestType.POST, MEDIA_ITEMS_CREATE_ENDPOINT, json=body)
         response.raise_for_status()
         for dct in response.json()["newMediaItemResults"]:
-            yield NewMediaItemResult(
-                uploadToken=dct["uploadToken"],
-                status=dct["status"],
-                mediaItem=GPMediaItem(gp, **dct["mediaItem"])
-            )
+            yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
     def batchGet(gp: "gp_wrapper.gp.GooglePhotos", ids: Iterable[str]
-                 ) -> Iterable["GPMediaItem"]: ...
+                 ) -> Generator[MediaItemResult, None, None]:
+        """Returns the list of media items for the specified media item identifiers. Items are returned in the same order as the supplied identifiers.
+
+        Returns:
+            _type_: _description_
+        """
+        ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchGet"
+        params = {
+            "mediaItemIds": ids
+        }
+        response = gp.request(RequestType.GET, ENDPOINT,
+                              params=params, use_json_headers=False)
+        response.raise_for_status()
+        for dct in response.json()["mediaItemResults"]:
+            yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
     def get(gp: "gp_wrapper.gp.GooglePhotos") -> "GPMediaItem": ...
@@ -95,9 +105,6 @@ class _GPMediaItem:
         self.filename = filename
         self.baseUrl = baseUrl
         self.description = description
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__} {json.dumps(self.__dict__, indent=4,default=json_default)}"
 
 
 class GPMediaItem(_GPMediaItem):
