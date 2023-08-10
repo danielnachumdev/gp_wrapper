@@ -10,9 +10,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 # import googleapiclient.discovery  # type:ignore
 from .media_item import GooglePhotosMediaItem
 from .album import GooglePhotosAlbum
-from .utils import UploadToken, Url, Path, declare, split_iterable
+from .utils import UploadToken, Url, Path, declare, split_iterable, RequestType, slowdown
 from .pool_executor import ThreadPoolExecutor
-from .requset_limiter import RequestLimiter
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",
@@ -21,12 +20,6 @@ SCOPES = [
 ]
 EMPTY_PROMPT_MESSAGE = ""
 DEFAULT_NUM_WORKERS: int = 2
-
-
-class RequestType(enum.Enum):
-    GET = "get"
-    POST = "post"
-    PATCH = "patch"
 
 
 class GooglePhotos:
@@ -46,9 +39,20 @@ class GooglePhotos:
         )
         self.session = requests.Session()
         self.session.credentials = self.credentials  # type:ignore
-        self.limiter = RequestLimiter(quota)
+        # self._request = slowdown(60/quota)(self._request_helper)
+
+    # def _request_helper(self, req_type: RequestType, endpoint: str, *args, **kwargs) -> Response:
+    #     if req_type == RequestType.GET:
+    #         return self.session.get(endpoint, *args, **kwargs)
+
+    #     if req_type == RequestType.POST:
+    #         return self.session.post(endpoint, *args, **kwargs)
+
+    #     if req_type == RequestType.PATCH:
+    #         return self.session.patch(endpoint, *args, **kwargs)
 
     def request(self, req_type: RequestType, endpoint: str, *args, **kwargs) -> Response:
+        # return self._request(req_type, endpoint, *args, **kwargs)
         if req_type == RequestType.GET:
             return self.session.get(endpoint, *args, **kwargs)
 
@@ -57,29 +61,6 @@ class GooglePhotos:
 
         if req_type == RequestType.PATCH:
             return self.session.patch(endpoint, *args, **kwargs)
-
-    def get(self, endpoint: Url, *args, **kwargs) -> Response:
-        """wrapper function to create general purpose GET request with the current session
-
-        Args:
-            endpoint (Url): the endpoint to call
-
-        Returns:
-            Response: the response of the request
-        """
-
-        return self.session.get(endpoint, *args, **kwargs)
-
-    def post(self, endpoint: Url, *args, **kwargs) -> Response:
-        """wrapper function to create general purpose POST request with the current session
-
-        Args:
-            endpoint (Url): the endpoint to call
-
-        Returns:
-            Response: the response of the request
-        """
-        return self.session.post(endpoint, *args, **kwargs)
 
     def _construct_headers(self, additional_headers: Optional[dict] = None) -> dict:
         BASE_HEADERS: dict = {
@@ -100,7 +81,8 @@ class GooglePhotos:
                 "title": album_name
             }
         }
-        response = self.post(
+        response = self.request(
+            RequestType.POST,
             GooglePhotos.ALBUMS_ENDPOINT,
             json=payload,
             headers=headers
@@ -109,11 +91,13 @@ class GooglePhotos:
         album = GooglePhotosAlbum.from_dict(self, dct)
         return album
 
+    @slowdown(2)
     @declare
     def _upload_media_item(self, media_path: Path) -> UploadToken:
         headers = self.json_headers()
         image_data = open(media_path, 'rb').read()
-        response = self.post(
+        response = self.request(
+            RequestType.POST,
             GooglePhotos.UPLOAD_MEDIA_ITEM_ENDPOINT,
             data=image_data,
             headers=headers
@@ -133,7 +117,8 @@ class GooglePhotos:
                 }
             ]
         }
-        response = self.post(
+        response = self.request(
+            RequestType.POST,
             GooglePhotos.CREATE_ENDPOINT,
             json=create_payload,
             headers=headers
@@ -160,7 +145,8 @@ class GooglePhotos:
         media = self._get_media_item_id(self._upload_media_item(media_path))
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album.id}:batchAddMediaItems"
         headers = self._construct_headers()
-        response = self.post(
+        response = self.request(
+            RequestType.POST,
             endpoint, headers=headers,
             json={
                 "mediaItemIds": [media.id]
@@ -197,7 +183,8 @@ class GooglePhotos:
                 all_media.append(media)
                 media_ids.append(media.id)
             headers = self._construct_headers()
-            response = self.post(
+            response = self.request(
+                RequestType.POST,
                 endpoint, headers=headers,
                 json={
                     "mediaItemIds": media_ids

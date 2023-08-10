@@ -2,15 +2,7 @@ import json
 import enum
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
-from .utils import MediaItemID, json_default, declare
-
-
-class MaskTypes(enum.Enum):
-    """
-    available mask values to update for a media item
-    see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/patch#query-parameters
-    """
-    DESCRIPTION = "description"
+from .utils import MediaItemID, json_default, declare, MaskTypes, RequestType
 
 
 class GooglePhotosMediaItem:
@@ -41,10 +33,10 @@ class GooglePhotosMediaItem:
 
     @declare("Setting MediaItem's description")
     def set_description(self, description: str) -> Response:
-        return self.update(MaskTypes.DESCRIPTION, description)
+        return self._update(MaskTypes.DESCRIPTION, description)
 
     @declare("Updating MediaItem")
-    def update(self, field_name: MaskTypes, field_value: str) -> Response:
+    def _update(self, field_name: MaskTypes, field_value: str) -> Response:
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
         headers = self.gp.json_headers()
         body = {
@@ -53,8 +45,8 @@ class GooglePhotosMediaItem:
         params = {
             "updateMask": field_name.value
         }
-        response = self.gp.session.patch(
-            endpoint, json=body, headers=headers, params=params)
+        response = self.gp.request(
+            RequestType.PATCH, endpoint, json=body, headers=headers, params=params)
         return response
 
 

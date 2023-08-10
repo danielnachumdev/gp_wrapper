@@ -4,27 +4,8 @@ from typing import Optional, Generator, Iterable
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .media_item import MediaItemID, GooglePhotosMediaItem
-from .utils import AlbumId, Path, declare, json_default, NextPageToken
+from .utils import AlbumId, Path, declare, json_default, NextPageToken, ALbumPosition, EnrichmentType, RequestType
 from .enrichment_item import EnrichmentItem
-
-
-class ALbumPosition(enum.Enum):
-    """enum to be used with GooglePhotosAlbum.add_enrichment to specify
-    the relative location of the enrichment in the album
-    """
-    POSITION_TYPE_UNSPECIFIED = "POSITION_TYPE_UNSPECIFIED"
-    FIRST_IN_ALBUM = "FIRST_IN_ALBUM"
-    LAST_IN_ALBUM = "LAST_IN_ALBUM"
-    AFTER_MEDIA_ITEM = "AFTER_MEDIA_ITEM"
-    AFTER_ENRICHMENT_ITEM = "AFTER_ENRICHMENT_ITEM"
-
-
-class EnrichmentType(enum.Enum):
-    """enum to be used with GooglePhotosAlbum.add_enrichment to specify the type of enrichment
-    """
-    TEXT_ENRICHMENT = "textEnrichment"
-    LOCATION_ENRICHMENT = "locationEnrichment"
-    MAP_ENRICHMENT = "mapEnrichment"
 
 
 DEFAULT_PAGE_SIZE: int = 20
@@ -43,7 +24,8 @@ class GooglePhotosAlbum:
         # }
         # if prevPageToken is not None:
         #     body["pageToken"] = prevPageToken
-        response = gp.get(endpoint,  headers=gp._construct_headers())
+        response = gp.request(RequestType.GET, endpoint,
+                              headers=gp._construct_headers())
         j = response.json()
         if "albums" not in j:
             # TODO
@@ -82,7 +64,8 @@ class GooglePhotosAlbum:
         # }
         # if prevPageToken is not None:
         #     body["pageToken"] = prevPageToken
-        response = gp.get(endpoint,  headers=gp._construct_headers())
+        response = gp.request(RequestType.GET, endpoint,
+                              headers=gp._construct_headers())
         j = response.json()
         if "albums" not in j:
             return None
@@ -120,7 +103,8 @@ class GooglePhotosAlbum:
         """will return the album with the specified id if it exists
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album_id}"
-        response = gp.get(endpoint, headers=gp._construct_headers())
+        response = gp.request(RequestType.GET, endpoint,
+                              headers=gp._construct_headers())
         if response.status_code == 200:
             return GooglePhotosAlbum.from_dict(gp, response.json())
         return None
@@ -198,7 +182,8 @@ class GooglePhotosAlbum:
 
         headers = self.gp._construct_headers(
             {"Content-Type": "application/json"})
-        response = self.gp.post(endpoint, json=body, headers=headers)
+        response = self.gp.request(
+            RequestType.POST, endpoint, json=body, headers=headers)
         return EnrichmentItem(response.json()["enrichmentItem"]["id"])
 
     @declare("Adding description to album")
@@ -238,8 +223,9 @@ class GooglePhotosAlbum:
                 "isCommentable": isCommentable
             }
         }
-        response = self.gp.post(endpoint, json=body,
-                                headers=self.gp.json_headers())
+        response = self.gp.request(
+            RequestType.POST, endpoint, json=body,
+            headers=self.gp.json_headers())
         return response
 
     @declare("Un-sharing an album")
@@ -250,7 +236,8 @@ class GooglePhotosAlbum:
             Response: resulting response
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:unshare"
-        response = self.gp.post(endpoint, headers=self.gp._construct_headers())
+        response = self.gp.request(
+            RequestType.POST, endpoint, headers=self.gp._construct_headers())
         return response
 
     @declare("Getting media in album")
@@ -267,8 +254,8 @@ class GooglePhotosAlbum:
         data = {
             "albumId": self.id
         }
-        response = self.gp.post(
-            endpoint, headers=self.gp.json_headers(), json=data)
+        response = self.gp.request(
+            RequestType.POST, endpoint, headers=self.gp.json_headers(), json=data)
         if not response.status_code == 200:
             return []
         j = response.json()
