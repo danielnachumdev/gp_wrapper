@@ -199,7 +199,9 @@ class GooglePhotosAlbum:
             EnrichmentItem: the resulting item
         """
         HARD_LIMIT: int = 1000
-        for part in description_parts:
+        # copy the items if it is a generator
+        parts = list(description_parts)
+        for part in parts:
             if len(part) > HARD_LIMIT:
                 raise ValueError(
                     f"the description parts should be less than {HARD_LIMIT} characters"
@@ -207,11 +209,14 @@ class GooglePhotosAlbum:
 
         chunks: list[str] = []
         tmp_chunk = ""
-        for text in description_parts:
+        for text in parts:
             if len(tmp_chunk) + len(text) >= 1000:
                 chunks.append(tmp_chunk)
                 tmp_chunk = ""
             tmp_chunk += text
+
+        if len(tmp_chunk) > 0:
+            chunks.append(tmp_chunk)
 
         items = []
         for part in chunks[::-1]:

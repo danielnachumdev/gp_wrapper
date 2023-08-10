@@ -9,7 +9,7 @@ def read_file(path: str) -> "list[str]":
 
 README_PATH = 'README.md'
 DESCRIPTION = 'A Google Photos API wrapper library'
-VERSION = "0.1.9"
+VERSION = "0.2.0"
 LONG_DESCRIPTION = '\n'.join(read_file(README_PATH))
 PACKAGE = "gp_wrapper"
 setup(
