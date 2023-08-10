@@ -1,6 +1,6 @@
 import json
 import enum
-from typing import Optional, Generator, Iterable
+from typing import Optional, Generator, Iterable, cast
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
 from .media_item import MediaItemID, GooglePhotosMediaItem
@@ -150,7 +150,8 @@ class GooglePhotosAlbum:
         return self.gp.upload_media_batch(self, paths)
 
     def add_enrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
-                       album_position: ALbumPosition, album_position_data: Optional[dict] = None) -> EnrichmentItem:
+                       album_position: ALbumPosition, album_position_data: Optional[dict] = None)\
+            -> tuple[Optional[Response], Optional[EnrichmentItem]]:
         """A generic function to add an enrichment to an album
 
         Args:
@@ -175,14 +176,18 @@ class GooglePhotosAlbum:
         if album_position_data is not None:
             body["albumPosition"].update(album_position_data)
 
-        headers = self.gp._construct_headers(
-            {"Content-Type": "application/json"})
+        headers = self.gp.json_headers()
         response = self.gp.request(
             RequestType.POST, endpoint, json=body, headers=headers)
-        return EnrichmentItem(response.json()["enrichmentItem"]["id"])
+        try:
+            return None, EnrichmentItem(response.json()["enrichmentItem"]["id"])
+        except:
+            return response, None
 
-    def add_description(self, description: str, relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM) \
-            -> EnrichmentItem:
+    def add_description(self, description_parts: list[str],
+                        relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM,
+                        optional_additional_data: Optional[dict] = None) \
+            -> Iterable[tuple[Optional[Response], Optional[EnrichmentItem]]]:
         """a facade function that uses 'add_enrichment' to simplify adding a description
 
         Args:
@@ -193,11 +198,21 @@ class GooglePhotosAlbum:
         Returns:
             EnrichmentItem: the resulting item
         """
-        return self.add_enrichment(
-            EnrichmentType.TEXT_ENRICHMENT,
-            {"text": description},
-            relative_position
-        )
+        HARD_LIMIT: int = 1000
+        for part in description_parts:
+            if len(part) > HARD_LIMIT:
+                raise ValueError(
+                    f"the description parts should be less than {HARD_LIMIT} characters"
+                    "long because of a hard limit google employs")
+        items = []
+        for part in description_parts[::-1]:
+            items.append(self.add_enrichment(
+                EnrichmentType.TEXT_ENRICHMENT,
+                {"text": part},
+                relative_position,
+                album_position_data=optional_additional_data
+            ))
+        return items
 
     def share(self, isCollaborative: bool = True, isCommentable: bool = True) -> Response:
         """share an album
