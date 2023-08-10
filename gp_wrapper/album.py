@@ -2,7 +2,7 @@ import json
 from typing import Optional, Generator, Iterable
 from requests.models import Response
 import gp_wrapper.gp  # pylint: disable=unused-import
-from .media_item import MediaItemID, GooglePhotosMediaItem
+from .media_item import MediaItemID, GPMediaItem
 from .structures import AlbumId, Path, NextPageToken,\
     PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT
 from .helpers import json_default
@@ -12,7 +12,7 @@ from .enrichment_item import EnrichmentItem
 DEFAULT_PAGE_SIZE: int = 20
 
 
-class _GooglePhotosAlbum:
+class _GPAlbum:
     """A wrapper class over Album object
     """
 
@@ -63,7 +63,7 @@ class _GooglePhotosAlbum:
         except:
             return response, None
 
-    def batchAddMediaItems(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
+    def batchAddMediaItems(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GPMediaItem]]:
         """Adds one or more media items in a user's Google Photos library to an album.
 
         Args:
@@ -78,7 +78,7 @@ class _GooglePhotosAlbum:
     def batchRemoveMediaItems(self): ...
 
     @staticmethod
-    def create(gp: "gp_wrapper.gp.GooglePhotos", album_name: str) -> "GooglePhotosAlbum":
+    def create(gp: "gp_wrapper.gp.GooglePhotos", album_name: str) -> "GPAlbum":
         payload = {
             "album": {
                 "title": album_name
@@ -90,15 +90,15 @@ class _GooglePhotosAlbum:
             json=payload,
         )
         dct = response.json()
-        album = GooglePhotosAlbum.from_dict(gp, dct)
+        album = GPAlbum.from_dict(gp, dct)
         return album
 
     @staticmethod
-    def get(gp: "gp_wrapper.gp.GooglePhotos") -> "GooglePhotosAlbum": ...
+    def get(gp: "gp_wrapper.gp.GooglePhotos") -> "GPAlbum": ...
 
     @staticmethod
     def list(
-        gp: "gp_wrapper.gp.GooglePhotos") -> Iterable["GooglePhotosAlbum"]: ...
+        gp: "gp_wrapper.gp.GooglePhotos") -> Iterable["GPAlbum"]: ...
 
     def patch(self): ...
 
@@ -135,7 +135,7 @@ class _GooglePhotosAlbum:
         return response
 
 
-class GooglePhotosAlbum(_GooglePhotosAlbum):
+class GPAlbum(_GPAlbum):
     @staticmethod
     def _get_albums_helper(gp: "gp_wrapper.gp.GooglePhotos"):
         endpoint = "https://photoslibrary.googleapis.com/v1/albums"
@@ -152,13 +152,13 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
             # TODO
             return ""
         for dct in j["albums"]:
-            yield GooglePhotosAlbum.from_dict(gp, dct)
+            yield GPAlbum.from_dict(gp, dct)
         return j["nextPageToken"]
 
     @staticmethod
-    def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE,
+    def all_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE,
                        prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False)\
-            -> Generator["GooglePhotosAlbum", None, Optional[NextPageToken]]:
+            -> Generator["GPAlbum", None, Optional[NextPageToken]]:
         """gets all albums serially
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -190,13 +190,13 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
         if "albums" not in j:
             return None
         for dct in j["albums"]:
-            yield GooglePhotosAlbum.from_dict(gp, dct)
+            yield GPAlbum.from_dict(gp, dct)
         if "nextPageToken" in j:
             return j["nextPageToken"]
         return None
 
     @staticmethod
-    def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GooglePhotosAlbum":
+    def from_dict(gp: "gp_wrapper.gp.GooglePhotos", dct: dict) -> "GPAlbum":
         """creates a GooglePhotosAlbum object from a dict from a response object
 
         Args:
@@ -206,7 +206,7 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
         Returns:
             GooglePhotosAlbum: the resulting object
         """
-        return GooglePhotosAlbum(
+        return GPAlbum(
             gp,
             id=dct["id"],
             title=dct["title"],
@@ -219,29 +219,29 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
         )
 
     @staticmethod
-    def from_id(gp: "gp_wrapper.gp.GooglePhotos", album_id: AlbumId) -> Optional["GooglePhotosAlbum"]:
+    def from_id(gp: "gp_wrapper.gp.GooglePhotos", album_id: AlbumId) -> Optional["GPAlbum"]:
         """will return the album with the specified id if it exists
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album_id}"
         response = gp.request(RequestType.GET, endpoint,
                               use_json_headers=False)
         if response.status_code == 200:
-            return GooglePhotosAlbum.from_dict(gp, response.json())
+            return GPAlbum.from_dict(gp, response.json())
         return None
 
     @staticmethod
     def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False)\
-            -> Generator["GooglePhotosAlbum", None, None]:
+            -> Generator["GPAlbum", None, None]:
         'will return all albums with the specified name'
         has_yielded: bool = False
-        for album in GooglePhotosAlbum.get_albums(gp):
+        for album in GPAlbum.all_albums(gp):
             if album.title == album_name:
                 has_yielded = True
                 yield album
 
         if create_on_missing:
             if not has_yielded:
-                yield GooglePhotosAlbum.create(gp, album_name)
+                yield GPAlbum.create(gp, album_name)
 
         return
 
@@ -289,7 +289,7 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
             ))
         return items
 
-    def get_media(self) -> Iterable[GooglePhotosMediaItem]:
+    def get_media(self) -> Iterable[GPMediaItem]:
         """gets all media in album
 
         Returns:
@@ -310,11 +310,23 @@ class GooglePhotosAlbum(_GooglePhotosAlbum):
         if "mediaItems" not in j:
             return []
         for dct in j["mediaItems"]:
-            yield GooglePhotosMediaItem.from_dict(self.gp, dct)
+            yield GPMediaItem.from_dict(self.gp, dct)
+
+    @staticmethod
+    def exists(gp: "gp_wrapper.gp.GooglePhotos", /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["GPAlbum"]:
+        for album in GPAlbum.all_albums(gp):
+            if name:
+                if album.title == name:
+                    return album
+            if id:
+                if album.id == id:
+                    return album
+
+        return None
 
 
 __all__ = [
-    "GooglePhotosAlbum",
+    "GPAlbum",
     "PositionType",
     "EnrichmentType"
 ]

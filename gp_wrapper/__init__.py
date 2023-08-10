@@ -1,4 +1,4 @@
 from .gp import GooglePhotos
-from .album import GooglePhotosAlbum
-from .media_item import GooglePhotosMediaItem
+from .album import GPAlbum
+from .media_item import GPMediaItem
 from .structures import *

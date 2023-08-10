@@ -5,8 +5,8 @@ from requests.models import Response
 from danielutils import warning
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
-from .media_item import GooglePhotosMediaItem
-from .album import GooglePhotosAlbum
+from .media_item import GPMediaItem
+from .album import GPAlbum
 from .structures import Path, RequestType,\
     EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, DEFAULT_NUM_WORKERS
 from .helpers import split_iterable
@@ -49,7 +49,7 @@ class GooglePhotos:
     def _json_headers(self) -> dict:
         return self._construct_headers({"Content-Type": "application/json"})
 
-    def _get_media_item_id(self, upload_token: str) -> GooglePhotosMediaItem:
+    def _get_media_item_id(self, upload_token: str) -> GPMediaItem:
         payload = {
             "newMediaItems": [
                 {
@@ -68,12 +68,12 @@ class GooglePhotos:
         j = response.json()
         if "newMediaItemResults" in j:
             dct = j['newMediaItemResults'][0]['mediaItem']
-            return GooglePhotosMediaItem.from_dict(self, dct)
+            return GPMediaItem.from_dict(self, dct)
 
         print(json.dumps(j, indent=4))
         raise AttributeError("'newMediaItemResults' not found in response")
 
-    def upload_media(self, album: GooglePhotosAlbum, media_path: Path) -> dict:
+    def upload_media(self, album: GPAlbum, media_path: Path) -> dict:
         """uploads a single image into an album
 
         Args:
@@ -84,7 +84,7 @@ class GooglePhotos:
             dict: the result of the request. empty dict means success
         """
         media = self._get_media_item_id(
-            GooglePhotosMediaItem._upload_media(self, media_path))
+            GPMediaItem.upload_media(self, media_path))
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album.id}:batchAddMediaItems"
         payload = {
             "mediaItemIds": [media.id]
@@ -96,8 +96,8 @@ class GooglePhotos:
         )
         return response.json()
 
-    def upload_media_batch(self, album: GooglePhotosAlbum, paths: Iterable[Path],
-                           num_workers: int = DEFAULT_NUM_WORKERS) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
+    def upload_media_batch(self, album: GPAlbum, paths: Iterable[Path],
+                           num_workers: int = DEFAULT_NUM_WORKERS) -> tuple[Iterable[Response], Iterable[GPMediaItem]]:
         """uploads media in batches of 50 images at once
         Args:
             album (GooglePhotosAlbum): the album wrapper object
@@ -120,7 +120,7 @@ class GooglePhotos:
             media_ids = []
             for path in batch:
                 media = self._get_media_item_id(
-                    GooglePhotosMediaItem._upload_media(self, path))
+                    GPMediaItem.upload_media(self, path))
                 all_media.append(media)
                 media_ids.append(media.id)
             headers = self._construct_headers()

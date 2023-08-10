@@ -1,5 +1,9 @@
+import json
 import enum
-from typing import Optional
+from datetime import datetime
+from typing import Optional, ForwardRef
+
+from abc import ABC, abstractmethod
 
 
 class RequestType(enum.Enum):
@@ -40,34 +44,75 @@ class RelativeItemType(enum.Enum):
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 
 
-class SimpleMediaItem:
+class Dictable(ABC):
+    @abstractmethod
+    def to_dict(self) -> dict: ...
+
+
+class SimpleMediaItem(Dictable):
+    # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#SimpleMediaItem
     def __init__(self, uploadToken: str, fileName: str) -> None:
         self.uploadToken = uploadToken
         self.fileName = fileName
 
+    def to_dict(self) -> dict:
+        return self.__dict__
 
-class NewMediaItem:
+
+class NewMediaItem(Dictable):
     def __init__(self, description: str, simpleMediaItem: SimpleMediaItem) -> None:
         self.description = description
         self.simpleMediaItem = simpleMediaItem
 
+    def to_dict(self) -> dict:
+        return {
+            "description": self.description,
+            "simpleMediaItem": self.simpleMediaItem.to_dict()
+        }
 
-class AlbumPosition:
-    def __init__(self, position: PositionType, /, relativeMediaItemId: Optional[str] = None, relativeEnrichmentItemId: Optional[str] = None) -> None:
+
+class AlbumPosition(Dictable):
+    def __init__(self, position: PositionType = PositionType.FIRST_IN_ALBUM, /,
+                 relativeMediaItemId: Optional[str] = None,
+                 relativeEnrichmentItemId: Optional[str] = None) -> None:
         self.position = position
-        if (not relativeMediaItemId and not relativeEnrichmentItemId) \
-                or (relativeEnrichmentItemId and relativeEnrichmentItemId):
-            raise ValueError(
-                "Must supply exactly one between 'relativeMediaItemId' and 'relativeEnrichmentItemId'")
-        if relativeMediaItemId:
-            self.relativeMediaItemId = relativeMediaItemId
-        else:
-            self.relativeEnrichmentItemId = relativeEnrichmentItemId
+        if position in {PositionType.AFTER_MEDIA_ITEM, PositionType.AFTER_ENRICHMENT_ITEM}:
+            if (not relativeMediaItemId and not relativeEnrichmentItemId) \
+                    or (relativeEnrichmentItemId and relativeEnrichmentItemId):
+                raise ValueError(
+                    "Must supply exactly one between 'relativeMediaItemId' and 'relativeEnrichmentItemId'")
+            if relativeMediaItemId:
+                self.relativeMediaItemId = relativeMediaItemId
+            else:
+                self.relativeEnrichmentItemId = relativeEnrichmentItemId
 
     def to_dict(self) -> dict:
-        dct = self.__dict__.copy()
+        dct: dict = self.__dict__.copy()
         dct["position"] = self.position.value
         return dct
+
+
+class NewMediaItemResult:
+    def __init__(self, uploadToken: str, status: dict[str, str],
+                 mediaItem: ForwardRef("GPMediaItem")) -> None:  # type:ignore
+        self.uploadToken = uploadToken
+        self.status = status
+        self.mediaItem = mediaItem
+
+
+class MediaMetadata(Dictable):
+    @staticmethod
+    def from_dict(dct: dict) -> "MediaMetadata":
+        return MediaMetadata(**dct)
+
+    def __init__(self, creationTime: str, width: str, height: str) -> None:
+        FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+        self.creationTime: datetime = datetime.strptime(creationTime, FORMAT)
+        self.width: int = int(width)
+        self.height: int = int(height)
+
+    def to_dict(self) -> dict:
+        return json.loads(json.dumps(self.__dict__))
 
 
 Milliseconds = float
