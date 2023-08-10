@@ -30,7 +30,6 @@ class GooglePhotos:
     UPLOAD_MEDIA_ITEM_ENDPOINT = "https://photoslibrary.googleapis.com/v1/uploads"
     CREATE_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate"
 
-    @declare("Initializing Google Photos service")
     def __init__(self, client_secrets_path: str = "./client_secrets.json", quota: int = 30) -> None:
         flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(client_secrets_path, SCOPES)  # noqa
         self.credentials: Credentials = flow.run_local_server(
@@ -73,7 +72,6 @@ class GooglePhotos:
     def json_headers(self) -> dict:
         return self._construct_headers({"Content-Type": "application/json"})
 
-    @declare("Creating an Album")
     def create_album(self, album_name: str) -> GooglePhotosAlbum:
         headers = self.json_headers()
         payload = {
@@ -92,7 +90,6 @@ class GooglePhotos:
         return album
 
     @slowdown(2)
-    @declare
     def _upload_media_item(self, media_path: Path) -> UploadToken:
         headers = self.json_headers()
         image_data = open(media_path, 'rb').read()
@@ -105,7 +102,6 @@ class GooglePhotos:
         token = response.content.decode('utf-8')
         return token
 
-    @declare
     def _get_media_item_id(self, upload_token: UploadToken) -> GooglePhotosMediaItem:
         headers = self._construct_headers()
         create_payload = {
@@ -131,7 +127,6 @@ class GooglePhotos:
         print(json.dumps(j, indent=4))
         raise AttributeError("'newMediaItemResults' not found in response")
 
-    @declare("Uploading media to Album")
     def upload_media(self, album: GooglePhotosAlbum, media_path: Path) -> dict:
         """uploads a single image into an album
 
@@ -154,7 +149,6 @@ class GooglePhotos:
         )
         return response.json()
 
-    @declare("Uploading images in batches")
     def upload_media_batch(self, album: GooglePhotosAlbum, paths: Iterable[Path],
                            num_workers: int = DEFAULT_NUM_WORKERS) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
         """uploads media in batches of 50 images at once

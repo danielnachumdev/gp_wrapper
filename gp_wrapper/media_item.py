@@ -31,11 +31,9 @@ class GooglePhotosMediaItem:
     def __str__(self) -> str:
         return f"{self.__class__.__name__} {json.dumps(self.__dict__, indent=4,default=json_default)}"
 
-    @declare("Setting MediaItem's description")
     def set_description(self, description: str) -> Response:
         return self._update(MaskTypes.DESCRIPTION, description)
 
-    @declare("Updating MediaItem")
     def _update(self, field_name: MaskTypes, field_value: str) -> Response:
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
         headers = self.gp.json_headers()

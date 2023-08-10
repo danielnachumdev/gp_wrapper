@@ -15,7 +15,6 @@ class GooglePhotosAlbum:
     """A wrapper class over Album object
     """
     @staticmethod
-    @declare
     def _get_albums_helper(gp: "gp_wrapper.gp.GooglePhotos"):
         endpoint = "https://photoslibrary.googleapis.com/v1/albums"
         # body: dict[str, str | int] = {
@@ -35,7 +34,6 @@ class GooglePhotosAlbum:
         return j["nextPageToken"]
 
     @staticmethod
-    @declare("Getting albums")
     def get_albums(gp: "gp_wrapper.gp.GooglePhotos", page_size: int = DEFAULT_PAGE_SIZE,
                        prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False)\
             -> Generator["GooglePhotosAlbum", None, Optional[NextPageToken]]:
@@ -92,13 +90,13 @@ class GooglePhotosAlbum:
             title=dct["title"],
             productUrl=dct["productUrl"],
             isWriteable=dct["isWriteable"],
-            mediaItemsCount=dct["mediaItemsCount"] if "mediaItemsCount" in dct else 0,
+            mediaItemsCount=int(dct["mediaItemsCount"]
+                                ) if "mediaItemsCount" in dct else 0,
             coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else "",
             coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
         )
 
     @staticmethod
-    @declare("Creating album from id")
     def from_id(gp: "gp_wrapper.gp.GooglePhotos", album_id: AlbumId) -> Optional["GooglePhotosAlbum"]:
         """will return the album with the specified id if it exists
         """
@@ -110,7 +108,6 @@ class GooglePhotosAlbum:
         return None
 
     @staticmethod
-    @declare("Creating album from name")
     def from_name(gp: "gp_wrapper.gp.GooglePhotos", album_name: str, create_on_missing: bool = False)\
             -> Generator["GooglePhotosAlbum", None, None]:
         'will return all albums with the specified name'
@@ -140,7 +137,6 @@ class GooglePhotosAlbum:
     def __str__(self) -> str:
         return f"{self.__class__.__name__} {json.dumps(self.__dict__, indent=4,default=json_default)}"
 
-    @declare("Adding media to album")
     def add_media(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GooglePhotosMediaItem]]:
         """a function to add media to the album
 
@@ -153,7 +149,6 @@ class GooglePhotosAlbum:
         """
         return self.gp.upload_media_batch(self, paths)
 
-    @declare("Adding an enrichment to an Album")
     def add_enrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
                        album_position: ALbumPosition, album_position_data: Optional[dict] = None) -> EnrichmentItem:
         """A generic function to add an enrichment to an album
@@ -186,7 +181,6 @@ class GooglePhotosAlbum:
             RequestType.POST, endpoint, json=body, headers=headers)
         return EnrichmentItem(response.json()["enrichmentItem"]["id"])
 
-    @declare("Adding description to album")
     def add_description(self, description: str, relative_position: ALbumPosition = ALbumPosition.FIRST_IN_ALBUM) \
             -> EnrichmentItem:
         """a facade function that uses 'add_enrichment' to simplify adding a description
@@ -205,7 +199,6 @@ class GooglePhotosAlbum:
             relative_position
         )
 
-    @declare("Sharing an album")
     def share(self, isCollaborative: bool = True, isCommentable: bool = True) -> Response:
         """share an album
 
@@ -228,7 +221,6 @@ class GooglePhotosAlbum:
             headers=self.gp.json_headers())
         return response
 
-    @declare("Un-sharing an album")
     def unshare(self) -> Response:
         """make a shared album private
 
@@ -240,7 +232,6 @@ class GooglePhotosAlbum:
             RequestType.POST, endpoint, headers=self.gp._construct_headers())
         return response
 
-    @declare("Getting media in album")
     def get_media(self) -> Iterable[GooglePhotosMediaItem]:
         """gets all media in album
 

@@ -90,6 +90,7 @@ def slowdown(interval: Seconds):
         prev_start: float = -float("inf")
         # heap = MinHeap()
 
+        @functools.wraps(func)
         def wrapper(*args, **kwargs) -> T:
             nonlocal index, prev_start
             # =============== THREAD SAFETY =============
