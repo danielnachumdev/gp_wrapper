@@ -112,14 +112,48 @@ class CoreGPMediaItem(Printable):
             filters: Optional[SearchFilter] = None,
             orderBy: Optional[str] = None
     ) -> tuple[list[dict], Optional[NextPageToken]]:
-        """_summary_
+        """Searches for media items in a user's Google Photos library. 
+        If no filters are set, then all media items in the user's library are returned. 
+        If an album is set, all media items in the specified album are returned. 
+        If filters are specified, media items that match the filters from the user's library are listed. 
+        If you set both the album and the filters, the request results in an error.
+
+        Args:
+            gp (gp_wrapper.objects.core.gp.CoreGooglePhotos): _description_
+            albumId (Optional[str], optional): Identifier of an album. 
+                If populated, lists all media items in specified album. 
+                Can't set in conjunction with any filters. Defaults to None.
+            pageSize (int, optional): Maximum number of media items to return in the response. 
+                Fewer media items might be returned than the specified number. 
+                The default pageSize is 25, the maximum is 100. Defaults to 25.
+            pageToken (Optional[str], optional): A continuation token to get the next page of the results. 
+                Adding this to the request returns the rows after the pageToken. 
+                The pageToken should be the value returned in the nextPageToken parameter 
+                in the response to the searchMediaItems request. Defaults to None.
+            filters (Optional[SearchFilter], optional): Filters to apply to the request. 
+                Can't be set in conjunction with an albumId. Defaults to None.
+            orderBy (Optional[str], optional): An optional field to specify the sort order of the search results.
+                The orderBy field only works when a dateFilter is used. 
+                When this field is not specified, results are displayed newest first, oldest last by their creationTime. 
+                Providing MediaMetadata.creation_time displays search results in the opposite order, oldest first then newest last. 
+                To display results newest first then oldest last, include the desc argument as follows: MediaMetadata.creation_time desc.
+                The only additional filters that can be used with this parameter are includeArchivedMedia and excludeNonAppCreatedData. 
+                No other filters are supported. Defaults to None.
 
         Raises:
-            ValueError: _description_
+            ValueError: 'albumId' cannot be set in conjunction with 'filters'
+            ValueError: 'pageSize' must be a positive integer. maximum value: 100
+            ValueError: The 'orderBy' field only works when a 'dateFilter' is used.
+
+        Returns:
+            tuple[list[dict], Optional[NextPageToken]]: a list of the resulting objects, token for next request.
         """
+        if albumId and filters:
+            raise ValueError(
+                "'albumId' cannot be set in conjunction with 'filters'")
         if not (0 < pageSize <= 100):
             raise ValueError(
-                "pageSize must be a positive integer. maximum value: 100")
+                "'pageSize' must be a positive integer. maximum value: 100")
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
         payload: dict = {
             "pageSize": pageSize
@@ -140,17 +174,17 @@ class CoreGPMediaItem(Printable):
                 payload["filters"]["dateFilter"] = filters.dateFilter.to_dict()
 
             if filters.featureFilter:
-                pass
+                payload["filters"]["featureFilter"] = filters.featureFilter.to_dict()
 
             if filters.mediaTypeFilter:
-                pass
-            payload["filters"] = None  # TODO
+                payload["filters"]["mediaTypeFilter"] = filters.mediaTypeFilter.to_dict()
 
         if orderBy:
             if not filters or not filters.dateFilter:
                 raise ValueError(
-                    "The orderBy field only works when a dateFilter is used.")
-            payload["orderBy"] = None  # TODO
+                    "The 'orderBy' field only works when a 'dateFilter' is used.")
+            # TODO implement this
+            # payload["orderBy"] = ?
 
         response = gp.request(RequestType.POST, endpoint, json=payload)
         response.raise_for_status()
