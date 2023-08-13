@@ -134,7 +134,7 @@ class CoreGPMediaItem(Printable):
         if filters:
             payload["filters"] = {}
             if filters.contentFilter:
-                pass
+                payload["filters"]["contentFilter"] = filters.contentFilter.to_dict()
 
             if filters.dateFilter:
                 payload["filters"]["dateFilter"] = filters.dateFilter.to_dict()
