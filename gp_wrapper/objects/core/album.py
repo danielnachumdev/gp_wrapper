@@ -1,17 +1,16 @@
-from typing import Optional, Generator, Iterable
+from typing import Optional, Iterable
 from requests.models import Response
-import gp_wrapper.objects.core.gp  # pylint: disable=unused-import
+from .gp import CoreGooglePhotos
 from .media_item import MediaItemID, CoreGPMediaItem
 from .enrichment_item import CoreEnrichmentItem
-from ...utils import AlbumId, Path, NextPageToken,\
-    PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT, Printable
+from ...utils import AlbumId, Path, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT, Printable
 
 
 class CoreGPAlbum(Printable):
     """A wrapper class over Album object
     """
 
-    def __init__(self, gp: "gp_wrapper.gp.GooglePhotos", id: AlbumId, title: str, productUrl: str, isWriteable: bool,
+    def __init__(self, gp: CoreGooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
                  mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
         self.gp = gp
         self.id = id
@@ -55,7 +54,7 @@ class CoreGPAlbum(Printable):
         except:
             return response, None
 
-    def batchAddMediaItems(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[GPMediaItem]]:
+    def batchAddMediaItems(self, paths: Iterable[Path]) -> tuple[Iterable[Response], Iterable[CoreGPMediaItem]]:
         """Adds one or more media items in a user's Google Photos library to an album.
 
         Args:
@@ -70,7 +69,7 @@ class CoreGPAlbum(Printable):
     def batchRemoveMediaItems(self): ...
 
     @staticmethod
-    def create(gp: "gp_wrapper.gp.GooglePhotos", album_name: str) -> "GPAlbum":
+    def create(gp: CoreGooglePhotos, album_name: str) -> "CoreGPAlbum":
         payload = {
             "album": {
                 "title": album_name
@@ -82,15 +81,14 @@ class CoreGPAlbum(Printable):
             json=payload,
         )
         dct = response.json()
-        album = GPAlbum.from_dict(gp, dct)
+        album = CoreGPAlbum.from_dict(gp, dct)
         return album
 
     @staticmethod
-    def get(gp: "gp_wrapper.gp.GooglePhotos") -> "GPAlbum": ...
+    def get(gp: CoreGooglePhotos) -> "CoreGPAlbum": ...
 
     @staticmethod
-    def list(
-        gp: "gp_wrapper.gp.GooglePhotos") -> Iterable["GPAlbum"]: ...
+    def list(gp: CoreGooglePhotos) -> Iterable["CoreGPAlbum"]: ...
 
     def patch(self): ...
 

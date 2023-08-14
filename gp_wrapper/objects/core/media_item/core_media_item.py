@@ -1,7 +1,7 @@
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 from .filters import SearchFilter
-import gp_wrapper.objects.core.gp  # pylint: disable=unused-import
+from ..gp import CoreGooglePhotos
 from ....utils import MaskTypes, RequestType, AlbumPosition, NewMediaItem,\
     MediaItemResult, MediaMetadata, Printable
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken
@@ -14,7 +14,7 @@ class CoreGPMediaItem(Printable):
     """
     @staticmethod
     @slowdown(2)
-    def upload_media(gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", media: Path) -> str:
+    def upload_media(gp: CoreGooglePhotos, media: Path) -> str:
         image_data = open(media, 'rb').read()
         response = gp.request(
             RequestType.POST,
@@ -69,7 +69,7 @@ class CoreGPMediaItem(Printable):
             yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
-    def batchGet(gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", ids: Iterable[str]
+    def batchGet(gp: CoreGooglePhotos, ids: Iterable[str]
                  ) -> Generator[MediaItemResult, None, None]:
         """Returns the list of media items for the specified media item identifiers. Items are returned in the same order as the supplied identifiers.
 
@@ -87,7 +87,7 @@ class CoreGPMediaItem(Printable):
             yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
-    def get(gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", mediaItemId: str) -> Response:
+    def get(gp: CoreGooglePhotos, mediaItemId: str) -> Response:
         """Returns the media item for the specified media item identifier.
 
         Args:
@@ -105,7 +105,7 @@ class CoreGPMediaItem(Printable):
 
     @staticmethod
     def search(
-            gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos",
+            gp: CoreGooglePhotos,
             albumId: Optional[str] = None,
             pageSize: int = 25,
             pageToken: Optional[str] = None,
@@ -195,7 +195,7 @@ class CoreGPMediaItem(Printable):
         return mediaItems, nextPageToken
 
     @staticmethod
-    def list(gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", pageSize: int = 25,
+    def list(gp: CoreGooglePhotos, pageSize: int = 25,
              pageToken: Optional[str] = None) -> tuple[list[dict], Optional[NextPageToken]]:
         if not (0 < pageSize <= 100):
             raise ValueError(
@@ -227,7 +227,7 @@ class CoreGPMediaItem(Printable):
             RequestType.PATCH, endpoint, json=payload, params=params)
         return response
 
-    def __init__(self, gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", id: MediaItemID, productUrl: str,
+    def __init__(self, gp: CoreGooglePhotos, id: MediaItemID, productUrl: str,
                  mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
         self.gp = gp
         self.id = id
@@ -241,5 +241,6 @@ class CoreGPMediaItem(Printable):
 
 
 __all__ = [
-    "CoreGPMediaItem"
+    "CoreGPMediaItem",
+    "MediaItemID"
 ]
