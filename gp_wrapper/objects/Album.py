@@ -75,7 +75,11 @@ class Album(CoreAlbum):
             yield from (Album._from_core(g) for g in gen)
 
     @staticmethod
-    def exists(gp: GooglePhotos, /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["Album"]:
+    def exists(
+            gp: GooglePhotos,
+            name: Optional[str] = None,
+            id: Optional[str] = None  # pylint: disable=redefined-builtin
+    ) -> Optional["Album"]:
         """checks whether an album exists, if so - returns it
 
         *supply only one
@@ -125,10 +129,12 @@ class Album(CoreAlbum):
         )
 
     # ================================= ADDITIONAL INSTANCE METHODS =================================
-    def add_text(self, description_parts: Iterable[str],
-                 relative_position: PositionType = PositionType.FIRST_IN_ALBUM,
-                 optional_additional_data: Optional[dict] = None) \
-            -> Iterable[tuple[Optional[Response], Optional[CoreEnrichmentItem]]]:
+    def add_text(
+        self,
+        description_parts: Iterable[str],
+        relative_position: PositionType = PositionType.FIRST_IN_ALBUM,
+        optional_additional_data: Optional[dict] = None
+    ) -> Iterable[tuple[Optional[Response], Optional[CoreEnrichmentItem]]]:
         """a facade function that uses 'add_enrichment' to simplify adding a description
 
         Args:
@@ -206,7 +212,10 @@ class Album(CoreAlbum):
             self.title = new_title
         return res
 
-    def upload_and_add(self, paths: Iterable[Path]) -> list[MediaItemResult]:
+    def upload_and_add(
+        self,
+        paths: Iterable[Path]
+    ) -> list[MediaItemResult]:
         """uploads the media to the library and also adds them to current album
 
         Args:
