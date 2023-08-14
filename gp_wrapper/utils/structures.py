@@ -122,16 +122,59 @@ class AlbumPosition(Dictable, Printable):
         return dct
 
 
+class StatusCode(Enum):
+    """
+    see https://developers.google.com/photos/library/reference/rest/v1/Status
+    and https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+    """
+    OK = 0
+    CANCELLED = 1
+    UNKNOWN = 2
+    INVALID_ARGUMENT = 3
+    DEADLINE_EXCEEDED = 4
+    NOT_FOUND = 5
+    ALREADY_EXISTS = 6
+    PERMISSION_DENIED = 7
+    UNAUTHENTICATED = 16
+    RESOURCE_EXHAUSTED = 8
+    FAILED_PRECONDITION = 9
+    ABORTED = 10
+    OUT_OF_RANGE = 11
+    UNIMPLEMENTED = 12
+    INTERNAL = 13
+    UNAVAILABLE = 14
+    DATA_LOSS = 15
+
+
+class Status(Printable):
+    """
+    see https://developers.google.com/photos/library/reference/rest/v1/Status
+    """
+    @staticmethod
+    def from_dict(dct) -> "Status":
+        return Status(
+            code=dct["code"],
+            message=dct["message"],
+            details=dct["details"] if "details" in dct else None
+        )
+
+    def __init__(self, code: StatusCode, message: str, details: Optional[list[dict]]) -> None:
+        self.code = code
+        self.message = message
+        self.details = details
+
+
 class MediaItemResult(Printable):
     @staticmethod
     def from_dict(gp: "gp_wrapper.GooglePhotos", dct: dict) -> "MediaItemResult":
         return MediaItemResult(
             mediaItem=gp_wrapper.MediaItem(
                 gp, **dct["mediaItem"]),
-            status=dct["status"] if "status" in dct else None,
+            status=Status.from_dict(
+                dct["status"]) if "status" in dct else None,
             uploadToken=dct["uploadToken"] if "uploadToken" in dct else None,
         )
-    def __init__(self, mediaItem: "gp_wrapper.MediaItem", status: Optional[dict[str, str]] = None,
+    def __init__(self, mediaItem: "gp_wrapper.MediaItem", status: Optional[Status] = None,
                  uploadToken: Optional[str] = None) -> None:  # type:ignore
         self.uploadToken = uploadToken
         self.status = status

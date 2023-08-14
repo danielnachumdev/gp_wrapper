@@ -11,11 +11,24 @@ from ....utils import slowdown
 
 MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE: int = 25
 MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE: int = 100
+MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS: int = 50
+DEFAULT_QUOTA: int = 30
 
 
 class CoreMediaItem(Printable):
-    """A wrapper class over Media Item object
+    """The core wrapper class over the 'MediaItem' object
+
+    Args:
+        gp (GooglePhotos): Google Photos object
+        id (MediaItemID): the id of the MediaItem
+        productUrl (str): the utl to view this item in the browser
+        mimeType (str): the type of the media
+        mediaMetadata (dict | MediaMetadata): metadata
+        filename (str): name of media
+        baseUrl (str, optional): ?. Defaults to "".
+        description (str, optional): media's description. Defaults to "".
     """
+    # ================================= STATIC HELPER METHODS =================================
     @staticmethod
     def _from_dict(gp: GooglePhotos, dct: dict) -> "CoreMediaItem":
         return CoreMediaItem(
@@ -28,17 +41,34 @@ class CoreMediaItem(Printable):
         )
 
     @staticmethod
-    @slowdown(2)
+    @slowdown(60//DEFAULT_QUOTA)
     def upload_media(gp: GooglePhotos, media: Path) -> UploadToken:
+        """uploads a single media item to Google's servers
+        NOTE: This does not add it to your library!
+        NOTE: To add the media to your library, you need to use MediaItem.batchCreate afterwards
+            or just use MediaItem.add_to_library instead
+
+        Args:
+            gp (GooglePhotos): Google Photos Object
+            media (Path): the path to the media
+
+        Raises:
+            HTTPError: If the HTTP request has failed
+
+        Returns:
+            UploadToken: the upload token to pass to be used in other functions
+        """
         image_data = open(media, 'rb').read()
         response = gp.request(
             RequestType.POST,
             UPLOAD_MEDIA_ITEM_ENDPOINT,
             data=image_data,
         )
+        response.raise_for_status()
         token = response.content.decode('utf-8')
         return token
 
+    # ================================= API METHODS =================================
     @staticmethod
     def batchCreate(
             gp: GooglePhotos, newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
@@ -51,9 +81,11 @@ class CoreMediaItem(Printable):
             If an album id is specified, the call adds the media item to the album too. 
             Each album can contain up to 20,000 media items. 
             By default, the media item will be added to the end of the library or album.
-            If an album id and position are both defined, the media item is added to the album at the specified position.
+            If an album id and position are both defined, the media item is added to the album at the
+                specified position.
             If the call contains multiple media items, they're added at the specified position. 
-            If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item.
+            If you are creating a media item in a shared album where you are not the owner, you are not allowed
+                to position the media item.
             Doing so will result in a BAD REQUEST error.
         Args:
             gp (GooglePhotos): the Google Photos object
@@ -75,9 +107,9 @@ class CoreMediaItem(Printable):
                 the contents of the response.
         """
         # TODO: If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item. Doing so will result in a BAD REQUEST error.
-        if not (0 < len(list(newMediaItems)) <= 50):
+        if not (0 < len(list(newMediaItems)) <= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS):
             raise ValueError(
-                "'newMediaItems' can only hold a maximum of 50 items per call")
+                f"'newMediaItems' can only hold a maximum of {MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS} items per call")
         body: dict[str, Union[str, list, dict]] = {
             # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate
             "newMediaItems": [item.to_dict() for item in newMediaItems]
@@ -101,10 +133,19 @@ class CoreMediaItem(Printable):
     @staticmethod
     def batchGet(gp: GooglePhotos, ids: Iterable[str]
                  ) -> Generator[MediaItemResult, None, None]:
-        """Returns the list of media items for the specified media item identifiers. Items are returned in the same order as the supplied identifiers.
+        """Returns the list of media items for the specified media item identifiers. 
+            Items are returned in the same order as the supplied identifiers.
 
-        Returns:
-            _type_: _description_
+        Args:
+            gp (GooglePhotos): Google Photos object
+            ids (Iterable[str]): Returns the list of media items for the specified media item identifiers. 
+                Items are returned in the same order as the supplied identifiers.
+
+        Raises:
+            HTTPError: If the HTTP request has failed
+
+        Yields:
+            Generator[MediaItemResult, None, None]: _description_
         """
         ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:batchGet"
         params = {
@@ -112,6 +153,7 @@ class CoreMediaItem(Printable):
         }
         response = gp.request(RequestType.GET, ENDPOINT,
                               params=params, use_json_headers=False)
+
         response.raise_for_status()
         for dct in response.json()["mediaItemResults"]:
             yield MediaItemResult.from_dict(gp, dct)
@@ -123,8 +165,10 @@ class CoreMediaItem(Printable):
         Args:
             gp (gp_wrapper.gp.GooglePhotos): Google Photos object
             mediaItemId (str): the id of the wanted item
+
         Raises:
             HTTPError: if the request fails
+
         Returns:
             GPMediaItem: the resulting object
         """
@@ -174,6 +218,7 @@ class CoreMediaItem(Printable):
             ValueError: 'albumId' cannot be set in conjunction with 'filters'
             ValueError: 'pageSize' must be a positive integer. maximum value: 100
             ValueError: The 'orderBy' field only works when a 'dateFilter' is used.
+            HTTPError: If the HTTP request has failed
 
         Returns:
             tuple[list[dict], Optional[NextPageToken]]: a list of the resulting objects, token for next request.
@@ -263,6 +308,19 @@ class CoreMediaItem(Printable):
         return [CoreMediaItem._from_dict(gp, dct) for dct in mediaItems], nextPageToken
 
     def patch(self, mask_type: MediaItemMaskTypes, field_value: str) -> Response:
+        """Update the media item with the specified id. Only the id and description fields of the media item are read. 
+            The media item must have been created by the developer via the API and must be owned by the user.
+
+        Args:
+            mask_type (MediaItemMaskTypes): Required. Indicate what fields in the provided media item to update.
+            field_value (str): the new value for said field
+
+        Raises:
+            HTTPError: If the HTTP request has failed
+
+        Returns:
+            Response: the response of the request
+        """
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
         payload = {
             mask_type.value: field_value
@@ -272,10 +330,24 @@ class CoreMediaItem(Printable):
         }
         response = self.gp.request(
             RequestType.PATCH, endpoint, json=payload, params=params)
+        response.raise_for_status()
         return response
 
+    # ================================= INSTANCE METHODS =================================
     def __init__(self, gp: GooglePhotos, id: MediaItemID, productUrl: str,
                  mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
+        """_summary_
+
+        Args:
+            gp (GooglePhotos): _description_
+            id (MediaItemID): _description_
+            productUrl (str): _description_
+            mimeType (str): _description_
+            mediaMetadata (dict | MediaMetadata): _description_
+            filename (str): _description_
+            baseUrl (str, optional): _description_. Defaults to "".
+            description (str, optional): _description_. Defaults to "".
+        """
         self.gp = gp
         self.id = id
         self.productUrl = productUrl
@@ -299,5 +371,6 @@ __all__ = [
     "CoreMediaItem",
     "MediaItemID",
     "MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE",
-    "MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE"
+    "MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE",
+    "MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS"
 ]

@@ -1,33 +1,37 @@
+import pathlib
 import math
 from threading import Thread, Semaphore
-from typing import Generator, Optional
+from typing import Generator, Optional, Iterable
 from queue import Queue
 from requests.models import Response
 from gp_wrapper.objects.core.gp import GooglePhotos
 from gp_wrapper.objects.core.media_item.core_media_item import CoreMediaItem
 from gp_wrapper.objects.core.media_item.filters import SearchFilter
-from gp_wrapper.utils import NextPageToken
-from .core import GooglePhotos, CoreMediaItem, MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE, MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE
-from ..utils import MediaItemMaskTypes
+from gp_wrapper.utils import NextPageToken, Path
+from .core import GooglePhotos, CoreMediaItem, MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,\
+    MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE, MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS
+from ..utils import MediaItemMaskTypes, NewMediaItem, SimpleMediaItem
 
 
 class MediaItem(CoreMediaItem):
+    """The advanced wrapper class over the 'MediaItem' object
 
+    Args:
+        gp (GooglePhotos): Google Photos object
+        id (MediaItemID): the id of the MediaItem
+        productUrl (str): the utl to view this item in the browser
+        mimeType (str): the type of the media
+        mediaMetadata (dict | MediaMetadata): metadata
+        filename (str): name of media
+        baseUrl (str, optional): ?. Defaults to "".
+        description (str, optional): media's description. Defaults to "".
+    """
     # ================================= STATIC HELPER METHODS =================================
 
     @staticmethod
     def _from_core(c: CoreMediaItem) -> "MediaItem":
         return MediaItem(**c.__dict__)
-    # ================================= OVERRIDDEN INSTANCE METHODS =================================
 
-    @staticmethod
-    def list(  # type:ignore
-        gp: GooglePhotos,
-        pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
-        pageToken: Optional[str] = None
-    ) -> tuple[list["MediaItem"], NextPageToken | None]:
-        lst, token = CoreMediaItem.list(gp, pageSize, pageToken)
-        return [MediaItem._from_core(o) for o in lst], token
     # ================================= ADDITIONAL STATIC METHODS =================================
 
     @staticmethod
@@ -104,6 +108,38 @@ class MediaItem(CoreMediaItem):
                 gp, MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE, token)
             yield from lst
 
+    @staticmethod
+    def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> list["MediaItem"]:
+        items: list[NewMediaItem] = []
+        for path in paths:
+            token = MediaItem.upload_media(gp, path)
+            filename = pathlib.Path(path).stem
+            item = NewMediaItem("", SimpleMediaItem(token, filename))
+            items.append(item)
+        batches: list[list[NewMediaItem]] = []
+        batch: list[NewMediaItem] = []
+        for item in items:
+            if len(batch) >= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS:
+                batches.append(batch)
+                batch = []
+            batch.append(item)
+        batches.append(batch)
+        res = []
+        for batch in batches:
+            res.extend(
+                [item.mediaItem for item in MediaItem.batchCreate(gp, batch)])
+        return res
+
+    # ================================= OVERRIDDEN INSTANCE METHODS =================================
+
+    @staticmethod
+    def list(  # type:ignore
+        gp: GooglePhotos,
+        pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
+        pageToken: Optional[str] = None
+    ) -> tuple[list["MediaItem"], NextPageToken | None]:
+        lst, token = CoreMediaItem.list(gp, pageSize, pageToken)
+        return [MediaItem._from_core(o) for o in lst], token
     # ================================= ADDITIONAL INSTANCE METHODS =================================
 
     def set_description(self, description: str) -> Response:

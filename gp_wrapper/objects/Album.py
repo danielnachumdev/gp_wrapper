@@ -195,6 +195,7 @@ class Album(CoreAlbum):
         return res
 
     def upload_and_add(self, paths: Iterable[Path]) -> list[MediaItemResult]:
+        # same code as MediaItem.add_to_library but it is more memory efficient this way
         items: list[NewMediaItem] = []
         for path in paths:
             token = MediaItem.upload_media(self.gp, path)
