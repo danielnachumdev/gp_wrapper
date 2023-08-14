@@ -1,4 +1,4 @@
-from typing import Optional, Iterable, Generator
+from typing import Optional, Iterable, Generator, Union
 from requests.models import Response
 from .gp import GooglePhotos
 from .media_item import MediaItemID
@@ -197,7 +197,7 @@ class CoreAlbum(Printable):
         pageSize: int = 20,
         prevPageToken: Optional[NextPageToken] = None,
         excludeNonAppCreatedData: bool = False
-    ) -> tuple[Generator["CoreAlbum", None, None], Optional[NextPageToken]]:
+    ) -> tuple[Optional[Generator["CoreAlbum", None, None]], Optional[NextPageToken]]:
         """Lists all albums shown to a user in the Albums tab of the Google Photos app.
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -228,10 +228,14 @@ class CoreAlbum(Printable):
                               use_json_headers=False)
         response.raise_for_status()
         j = response.json()
+        token: Optional[NextPageToken] = None
+        gen: Optional[Generator[CoreAlbum, None, None]] = []  # type:ignore
         if j:
-            return (CoreAlbum._from_dict(gp, dct) for dct in j["albums"]), j["nextPageToken"] if "nextPageToken" in j else None
-        empty: list[CoreAlbum] = []
-        return (o for o in empty), None
+            if "nextPageToken" in j:
+                token = j["nextPageToken"]
+            if "albums" in j:
+                gen = (CoreAlbum._from_dict(gp, dct) for dct in j["albums"])
+        return gen, token
 
     def patch(self, mask_type: AlbumMaskType, field_value) -> Response:
         """Update the album with the specified id. Only the id, title and coverPhotoMediaItemId fields of the album are read.

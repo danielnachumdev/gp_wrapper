@@ -49,30 +49,31 @@ class Album(CoreAlbum):
         excludeNonAppCreatedData: bool = False
     ) -> Generator["Album", None, None]:
         """gets all albums serially
-
-        pageSize (int): Maximum number of albums to return in the response.
-            Fewer albums might be returned than the specified number. The default pageSize is 20, the maximum is 50.
-        pageToken (str): A continuation token to get the next page of the results.
-            Adding this to the request returns the rows after the pageToken.
-            The pageToken should be the value returned in the nextPageToken parameter in the response
-            to the listAlbums request.
-        excludeNonAppCreatedData (bool): If set, the results exclude media items that were not created by this app.
-            Defaults to false (all albums are returned).
-            This field is ignored if the photoslibrary.readonly.appcreateddata scope is used.
+        Args:
+            pageSize (int): Maximum number of albums to return in the response.
+                Fewer albums might be returned than the specified number. The default pageSize is 20, the maximum is 50.
+            pageToken (str): A continuation token to get the next page of the results.
+                Adding this to the request returns the rows after the pageToken.
+                The pageToken should be the value returned in the nextPageToken parameter in the response
+                to the listAlbums request.
+            excludeNonAppCreatedData (bool): If set, the results exclude media items that were not created by this app.
+                Defaults to false (all albums are returned).
+                This field is ignored if the photoslibrary.readonly.appcreateddata scope is used.
+        Raises:
+            HTTPError: if the request fails
 
         Returns:
-            NextPageToken: a token to supply to a future call to get albums after current end point in album list
-
-        Yields:
-            GooglePhotosAlbum: yields the albums one after the other
+            Generator[Album, None, None]: a generator of Album objects
         """
         gen, prevPageToken = Album.list(
             gp, pageSize, None, excludeNonAppCreatedData)
-        yield from (Album._from_core(g) for g in gen)
+        if gen:
+            yield from (Album._from_core(g) for g in gen)
         while prevPageToken:
             gen, prevPageToken = Album.list(
                 gp, pageSize, prevPageToken, excludeNonAppCreatedData)
-            yield from (Album._from_core(g) for g in gen)
+            if gen:
+                yield from (Album._from_core(g) for g in gen)
 
     @staticmethod
     def exists(

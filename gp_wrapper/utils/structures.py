@@ -153,14 +153,14 @@ class Status(Printable):
     @staticmethod
     def from_dict(dct) -> "Status":
         return Status(
-            code=dct["code"],
             message=dct["message"],
+            code=dct["code"] if "code" in dct else None,
             details=dct["details"] if "details" in dct else None
         )
 
-    def __init__(self, code: StatusCode, message: str, details: Optional[list[dict]]) -> None:
-        self.code = code
+    def __init__(self, message: str, code: Optional[StatusCode] = None, details: Optional[list[dict]] = None) -> None:
         self.message = message
+        self.code = code
         self.details = details
 
 
