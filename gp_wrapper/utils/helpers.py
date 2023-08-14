@@ -54,7 +54,7 @@ def split_iterable(iterable: Iterable[T], batch_size: int) -> Generator[list[T],
     yield batch
 
 
-def json_default(obj: Any) -> dict:
+def json_default(obj: Any) -> str:
     """a default handler when using json over a non-json-serializable object
 
     Args:
@@ -65,7 +65,10 @@ def json_default(obj: Any) -> dict:
     """
     if hasattr(obj, "__json__"):
         return getattr(obj, "__json__")()
-    return {obj.__class__.__name__: id(obj)}
+    if hasattr(obj, "__dict__") and obj.__module__.split(".")[0] == "gp_wrapper":
+        # json.dumps(obj.__dict__, indent=4, default=json_default)
+        return str(obj)
+    return str(id(obj))
 
 
 def slowdown(interval: Seconds):

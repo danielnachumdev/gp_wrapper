@@ -125,10 +125,10 @@ class CoreMediaItem(Printable):
         response = gp.request(
             RequestType.POST, MEDIA_ITEMS_CREATE_ENDPOINT, json=body)
         response.raise_for_status()
-        items = []
+        media_items = []
         for dct in response.json()["newMediaItemResults"]:
-            items.append(MediaItemResult.from_dict(gp, dct))
-        return items
+            media_items.append(MediaItemResult.from_dict(gp, dct))
+        return media_items
 
     @staticmethod
     def batchGet(gp: GooglePhotos, ids: Iterable[str]

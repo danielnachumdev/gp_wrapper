@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 from datetime import datetime
-from typing import Optional
+from typing import Optional, IO
 from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
 
@@ -23,9 +23,16 @@ class RequestType(Enum):
 
 
 class HeaderType(Enum):
-    DEFAULT = 0
-    JSON = 1
-    OCTET = 2
+    DEFAULT = ""
+    JSON = "json"
+    OCTET = "octet-stream"
+
+
+class MimeType(Enum):
+    PNG = "image/png"
+    JPEG = "image/jpeg"
+    MP4 = "video/mp4"
+    MOV = "video/quicktime"
 
 
 class PositionType(Enum):
@@ -65,9 +72,82 @@ class RelativeItemType(Enum):
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 
 
+class IndentedWriter2:
+    """every class that will inherit this class will have the following functions available
+        write() with the same arguments a builtin print()
+        indent()
+        undent()
+
+        also, it is expected in the __init__ function to call super().__init__()
+        also, the output_stream must be set whether by the first argument io super().__init__(...)
+        or by set_stream() explicitly somewhere else.
+
+        this class will not function properly is the output_stream is not set!
+
+    """
+
+    def __init__(self, indent_value: str = "\t"):
+        self.indent_level = 0
+        self.indent_value = indent_value
+        self.buffer: str = ""
+
+    def to_stream(self, stream: IO[str]) -> None:
+        """outputs the buffer to a stream
+
+        Args:
+            stream (IO[str]): the stream to output to
+        """
+        stream.write(self.buffer)
+
+    def add_from(self, s: str) -> None:
+        for i, line in enumerate(s.splitlines()):
+            if i == 0:
+                self.buffer += line+"\n"
+            else:
+                self.write(line)
+
+    def write(self, *args, sep=" ", end="\n") -> None:
+        """writes the supplied arguments to the output_stream
+
+        Args:
+            sep (str, optional): the str to use as a separator between arguments. Defaults to " ".
+            end (str, optional): the str to use as the final value. Defaults to "\n".
+
+        Raises:
+            ValueError: _description_
+        """
+        self.buffer += str(self.indent_level *
+                           self.indent_value + sep.join(args)+end)
+
+    def indent(self) -> None:
+        """indents the preceding output with write() by one quantity more
+        """
+        self.indent_level += 1
+
+    def undent(self) -> None:
+        """un-dents the preceding output with write() by one quantity less
+            has a minimum value of 0
+        """
+        self.indent_level = max(0, self.indent_level-1)
+
+
 class Printable:
     def __str__(self) -> str:
-        return f"{self.__class__.__name__} {json.dumps(self.__dict__,indent=4,default=gp_wrapper.utils.json_default)}"
+        w = IndentedWriter2(indent_value=" "*4)
+        # w.write(f"{self.__class__.__name__} ", end="")
+        w.write("{")
+        w.indent()
+        for k, v in self.__dict__.items():
+            w.write(f"\"{k}\": ", end="")
+            if isinstance(v, Printable):
+                w.add_from(str(v))
+                w.buffer = w.buffer[:-1]+",\n"
+            else:
+                w.buffer += (f"\"{v}\",\n")
+        w.buffer = w.buffer[:-2]+"\n"
+        w.undent()
+        w.write("}")
+        return w.buffer
 
 
 class Dictable(ABC):
@@ -174,13 +254,13 @@ class MediaItemResult(Printable):
     @staticmethod
     def from_dict(gp: "gp_wrapper.GooglePhotos", dct: dict) -> "MediaItemResult":
         return MediaItemResult(
-            mediaItem=gp_wrapper.MediaItem(
-                gp, **dct["mediaItem"]),
+            mediaItem=gp_wrapper.MediaItem.from_dict(
+                gp, dct["mediaItem"]) if "mediaItem" in dct else None,
             status=Status.from_dict(
                 dct["status"]) if "status" in dct else None,
             uploadToken=dct["uploadToken"] if "uploadToken" in dct else None,
         )
-    def __init__(self, mediaItem: "gp_wrapper.MediaItem", status: Optional[Status] = None,
+    def __init__(self, mediaItem: Optional["gp_wrapper.MediaItem"] = None, status: Optional[Status] = None,
                  uploadToken: Optional[str] = None) -> None:  # type:ignore
         self.uploadToken = uploadToken
         self.status = status
