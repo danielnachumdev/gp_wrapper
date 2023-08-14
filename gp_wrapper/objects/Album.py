@@ -5,11 +5,23 @@ from gp_wrapper.objects.core.album import CoreAlbum
 from gp_wrapper.objects.core.gp import GooglePhotos
 from .core import GooglePhotos, CoreAlbum, CoreEnrichmentItem
 from .MediaItem import MediaItem
-from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType, NewMediaItem, SimpleMediaItem, MediaItemResult
+from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType,\
+    NewMediaItem, SimpleMediaItem, MediaItemResult
 from ..utils import Path, NextPageToken
 
 
 class Album(CoreAlbum):
+    """the advanced wrapper class over 'Album' object
+     Args:
+            gp (GooglePhotos): Google Photos object
+            id (AlbumId): the id of the Album
+            title (str): the title of the Album
+            productUrl (str): the url to view the Album
+            isWriteable (bool): if it is possible to edit the album
+            mediaItemsCount (int): how many MediaItems are there in the album
+            coverPhotoBaseUrl (str): the url to the cover photo
+            coverPhotoMediaItemId (MediaItemID): the id of the media item which is the cover photo
+    """
     # ================================= HELPER STATIC METHODS =================================
     @staticmethod
     def _from_core(obj: CoreAlbum) -> "Album":
@@ -195,6 +207,14 @@ class Album(CoreAlbum):
         return res
 
     def upload_and_add(self, paths: Iterable[Path]) -> list[MediaItemResult]:
+        """uploads the media to the library and also adds them to current album
+
+        Args:
+            paths (Iterable[Path]): paths to media files
+
+        Returns:
+            list[MediaItemResult]: resulting objects of the uploads
+        """
         # same code as MediaItem.add_to_library but it is more memory efficient this way
         items: list[NewMediaItem] = []
         for path in paths:

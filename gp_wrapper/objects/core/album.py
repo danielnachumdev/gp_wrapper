@@ -8,7 +8,16 @@ from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_
 
 
 class CoreAlbum(Printable):
-    """A wrapper class over Album object
+    """the basic wrapper class over 'Album' object
+     Args:
+            gp (GooglePhotos): Google Photos object
+            id (AlbumId): the id of the Album
+            title (str): the title of the Album
+            productUrl (str): the url to view the Album
+            isWriteable (bool): if it is possible to edit the album
+            mediaItemsCount (int): how many MediaItems are there in the album
+            coverPhotoBaseUrl (str): the url to the cover photo
+            coverPhotoMediaItemId (MediaItemID): the id of the media item which is the cover photo
     """
     # ================================= HELPER STATIC METHODS =================================
     @staticmethod
