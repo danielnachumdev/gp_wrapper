@@ -9,4 +9,3 @@ danielutils
 twine
 types-tqdm 
 tqdm
-pytest

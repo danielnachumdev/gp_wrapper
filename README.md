@@ -1,4 +1,4 @@
-# gp_wrapper v=0.2.4
+# gp_wrapper v=0.8.0
 A Google Photos API wrapper library
 
 currently a work in progress.
