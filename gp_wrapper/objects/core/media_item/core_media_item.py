@@ -1,20 +1,24 @@
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 from .filters import SearchFilter
-from ..gp import CoreGooglePhotos
+from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
     MediaItemResult, MediaMetadata, Printable
-from ....utils import MediaItemID, AlbumId, Path, NextPageToken
+from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown
 
 
-class CoreGPMediaItem(Printable):
+MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE: int = 25
+MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE: int = 100
+
+
+class CoreMediaItem(Printable):
     """A wrapper class over Media Item object
     """
     @staticmethod
-    def _from_dict(gp: CoreGooglePhotos, dct: dict) -> "CoreGPMediaItem":
-        return CoreGPMediaItem(
+    def _from_dict(gp: GooglePhotos, dct: dict) -> "CoreMediaItem":
+        return CoreMediaItem(
             gp,
             id=dct["id"],
             productUrl=dct["productUrl"],
@@ -25,7 +29,7 @@ class CoreGPMediaItem(Printable):
 
     @staticmethod
     @slowdown(2)
-    def upload_media(gp: CoreGooglePhotos, media: Path) -> str:
+    def upload_media(gp: GooglePhotos, media: Path) -> UploadToken:
         image_data = open(media, 'rb').read()
         response = gp.request(
             RequestType.POST,
@@ -37,9 +41,9 @@ class CoreGPMediaItem(Printable):
 
     @staticmethod
     def batchCreate(
-            gp: CoreGooglePhotos, newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
+            gp: GooglePhotos, newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
         albumPosition: Optional[AlbumPosition] = None) \
-            -> Generator[MediaItemResult, None, None]:
+            -> list[MediaItemResult]:
         """Creates one or more media items in a user's Google Photos library.
             This is the second step for creating a media item.\n
             For details regarding Step 1, uploading the raw bytes to a Google Server, see GPMediaItem.upload_media\n
@@ -51,36 +55,51 @@ class CoreGPMediaItem(Printable):
             If the call contains multiple media items, they're added at the specified position. 
             If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item.
             Doing so will result in a BAD REQUEST error.
-
+        Args:
+            gp (GooglePhotos): the Google Photos object
+            newMediaItems (Iterable[NewMediaItem]): Required. List of media items to be created. 
+                Maximum 50 media items per call.
+            albumId (Optional[AlbumId]): Identifier of the album where the media items are added. 
+                The media items are also added to the user's library. This is an optional field.
+            albumPosition (Optional[]): Position in the album where the media items are added. 
+                If not specified, the media items are added to the end of the album 
+                (as per the default value, that is, LAST_IN_ALBUM). 
+                The request fails if this field is set and the albumId is not specified. 
+                The request will also fail if you set the field and are not the owner of the shared album.
         Raises:
             ValueError: If the optional arguments are passed incorrectly
             HTTPError: If the HTTP request has failed
 
         Yields:
-            Generator[NewMediaItemResult, None, None]: A generator of wrapper objects representing the contents of the response
+            Generator[NewMediaItemResult, None, None]: A generator of wrapper objects representing
+                the contents of the response.
         """
         # TODO: If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item. Doing so will result in a BAD REQUEST error.
+        if not (0 < len(list(newMediaItems)) <= 50):
+            raise ValueError(
+                "'newMediaItems' can only hold a maximum of 50 items per call")
         body: dict[str, Union[str, list, dict]] = {
             # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate
             "newMediaItems": [item.to_dict() for item in newMediaItems]
         }
-        if albumId and albumPosition:
+        if albumId:
             body["albumId"] = albumId
+        if albumPosition:
+            if not albumId:
+                raise ValueError(
+                    "'albumPosition' is only valid if 'albumId' is also passed together")
             body["albumPosition"] = albumPosition.to_dict()
-        elif not albumId and not albumPosition:
-            pass
-        else:
-            raise ValueError(
-                "'albumId' and 'albumPosition' must be passed together")
 
         response = gp.request(
             RequestType.POST, MEDIA_ITEMS_CREATE_ENDPOINT, json=body)
         response.raise_for_status()
+        items = []
         for dct in response.json()["newMediaItemResults"]:
-            yield MediaItemResult.from_dict(gp, dct)
+            items.append(MediaItemResult.from_dict(gp, dct))
+        return items
 
     @staticmethod
-    def batchGet(gp: CoreGooglePhotos, ids: Iterable[str]
+    def batchGet(gp: GooglePhotos, ids: Iterable[str]
                  ) -> Generator[MediaItemResult, None, None]:
         """Returns the list of media items for the specified media item identifiers. Items are returned in the same order as the supplied identifiers.
 
@@ -98,7 +117,7 @@ class CoreGPMediaItem(Printable):
             yield MediaItemResult.from_dict(gp, dct)
 
     @staticmethod
-    def get(gp: CoreGooglePhotos, mediaItemId: str) -> Response:
+    def get(gp: GooglePhotos, mediaItemId: str) -> Response:
         """Returns the media item for the specified media item identifier.
 
         Args:
@@ -116,13 +135,13 @@ class CoreGPMediaItem(Printable):
 
     @staticmethod
     def search(
-            gp: CoreGooglePhotos,
+            gp: GooglePhotos,
             albumId: Optional[str] = None,
             pageSize: int = 25,
             pageToken: Optional[str] = None,
             filters: Optional[SearchFilter] = None,
             orderBy: Optional[str] = None
-    ) -> tuple[Generator["CoreGPMediaItem", None, None], Optional[NextPageToken]]:
+    ) -> tuple[Generator["CoreMediaItem", None, None], Optional[NextPageToken]]:
         """Searches for media items in a user's Google Photos library. 
         If no filters are set, then all media items in the user's library are returned. 
         If an album is set, all media items in the specified album are returned. 
@@ -202,15 +221,33 @@ class CoreGPMediaItem(Printable):
         j = response.json()
         mediaItems = j["mediaItems"] if "mediaItems" in j else []
         nextPageToken = j["nextPageToken"] if "nextPageToken" in j else None
-        return (CoreGPMediaItem._from_dict(gp, dct)
+        return (CoreMediaItem._from_dict(gp, dct)
                 for dct in mediaItems), nextPageToken
 
     @staticmethod
-    def list(gp: CoreGooglePhotos, pageSize: int = 25,
-             pageToken: Optional[str] = None) -> tuple[list[dict], Optional[NextPageToken]]:
-        if not (0 < pageSize <= 100):
+    def list(gp: GooglePhotos, pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
+             pageToken: Optional[str] = None) -> tuple[list["CoreMediaItem"], Optional[NextPageToken]]:
+        """List all media items from a user's Google Photos library.
+
+        Args:
+            gp (GooglePhotos): Google Photos object
+            pageSize (int, optional): Maximum number of media items to return in the response. 
+                Fewer media items might be returned than the specified number. 
+                The default pageSize is MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE, the maximum is MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE. Defaults to MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE.
+            pageToken (Optional[str], optional): A continuation token to get the next page of the results. 
+                Adding this to the request returns the rows after the pageToken. 
+                The pageToken should be the value returned in the nextPageToken parameter in the 
+                response to the listMediaItems request. Defaults to None.
+
+        Raises:
+            ValueError: if pageSize is in the correct value range
+
+        Returns:
+            tuple[list[dict], Optional[NextPageToken]]: _description_
+        """
+        if not (0 < pageSize <= MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE):
             raise ValueError(
-                "pageSize must be between 0 and 100.\nsee https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
+                f"pageSize must be between 0 and {MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE}.\nsee https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems"
         params: dict = {
             "pageSize": pageSize
@@ -223,8 +260,7 @@ class CoreGPMediaItem(Printable):
         j = response.json()
         mediaItems = j["mediaItems"] if "mediaItems" in j else []
         nextPageToken = j["nextPageToken"] if "nextPageToken" in j else None
-        # (GPMediaItem.from_dict(gp, dct) for dct in mediaItems), nextPageToken
-        return mediaItems, nextPageToken
+        return [CoreMediaItem._from_dict(gp, dct) for dct in mediaItems], nextPageToken
 
     def patch(self, mask_type: MediaItemMaskTypes, field_value: str) -> Response:
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
@@ -238,7 +274,7 @@ class CoreGPMediaItem(Printable):
             RequestType.PATCH, endpoint, json=payload, params=params)
         return response
 
-    def __init__(self, gp: CoreGooglePhotos, id: MediaItemID, productUrl: str,
+    def __init__(self, gp: GooglePhotos, id: MediaItemID, productUrl: str,
                  mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
         self.gp = gp
         self.id = id
@@ -251,7 +287,7 @@ class CoreGPMediaItem(Printable):
         self.description = description
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, CoreGPMediaItem):
+        if not isinstance(other, CoreMediaItem):
             return False
         return self.id == other.id
 
@@ -260,6 +296,8 @@ class CoreGPMediaItem(Printable):
 
 
 __all__ = [
-    "CoreGPMediaItem",
-    "MediaItemID"
+    "CoreMediaItem",
+    "MediaItemID",
+    "MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE",
+    "MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE"
 ]

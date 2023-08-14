@@ -1,4 +1,5 @@
 from .objects import *
+from .utils.structures import *
 
 
 def help() -> None:

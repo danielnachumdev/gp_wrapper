@@ -5,6 +5,16 @@ from typing import Optional
 from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
 
+Milliseconds = float
+Seconds = float
+MediaItemID = str
+UploadToken = str
+Url = str
+AlbumId = str
+Path = str
+NextPageToken = str
+Value = str
+
 
 class RequestType(Enum):
     GET = "get"
@@ -70,6 +80,16 @@ class SimpleMediaItem(Dictable, Printable):
 
 
 class NewMediaItem(Dictable, Printable):
+    @staticmethod
+    def from_dict(token: UploadToken, description: str = "", filename: str = "") -> "NewMediaItem":
+        return NewMediaItem(
+            description,
+            SimpleMediaItem(
+                token,
+                filename
+            )
+        )
+
     def __init__(self, description: str, simpleMediaItem: SimpleMediaItem) -> None:
         self.description = description
         self.simpleMediaItem = simpleMediaItem
@@ -104,14 +124,14 @@ class AlbumPosition(Dictable, Printable):
 
 class MediaItemResult(Printable):
     @staticmethod
-    def from_dict(gp: "gp_wrapper.CoreGooglePhotos", dct: dict) -> "MediaItemResult":
+    def from_dict(gp: "gp_wrapper.GooglePhotos", dct: dict) -> "MediaItemResult":
         return MediaItemResult(
-            mediaItem=gp_wrapper.objects.MediaItem.GPMediaItem(
+            mediaItem=gp_wrapper.MediaItem(
                 gp, **dct["mediaItem"]),
             status=dct["status"] if "status" in dct else None,
             uploadToken=dct["uploadToken"] if "uploadToken" in dct else None,
         )
-    def __init__(self, mediaItem: "gp_wrapper.objects.MediaItem.GPMediaItem", status: Optional[dict[str, str]] = None,
+    def __init__(self, mediaItem: "gp_wrapper.MediaItem", status: Optional[dict[str, str]] = None,
                  uploadToken: Optional[str] = None) -> None:  # type:ignore
         self.uploadToken = uploadToken
         self.status = status
@@ -134,14 +154,6 @@ class MediaMetadata(Dictable, Printable):
         return json.loads(json.dumps(self.__dict__))
 
 
-Milliseconds = float
-Seconds = float
-MediaItemID = str
-Url = str
-AlbumId = str
-Path = str
-NextPageToken = str
-Value = str
 SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     "https://www.googleapis.com/auth/photoslibrary.appendonly",

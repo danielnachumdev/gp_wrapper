@@ -4,12 +4,11 @@ import requests
 from requests.models import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
-# type:ignore #noqa # pylint: disable=import-error
 import gp_wrapper.objects.core.media_item
-from ...utils import RequestType, Printable, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, MediaMetadata
+from ...utils import RequestType, Printable, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
 
 
-class CoreGooglePhotos(Printable):
+class GooglePhotos(Printable):
     """A wrapper class over GooglePhotos API to get 
     higher level abstraction for easy use
     """
@@ -47,7 +46,7 @@ class CoreGooglePhotos(Printable):
     def _json_headers(self) -> dict:
         return self._construct_headers({"Content-Type": "application/json"})
 
-    def _get_media_item_id(self, upload_token: str) -> "gp_wrapper.objects.core.media_item.CoreGPMediaItem":
+    def _get_media_item_id(self, upload_token: str) -> "gp_wrapper.objects.core.media_item.CoreMediaItem":
         payload = {
             "newMediaItems": [
                 {
@@ -66,12 +65,12 @@ class CoreGooglePhotos(Printable):
         j = response.json()
         if "newMediaItemResults" in j:
             dct = j['newMediaItemResults'][0]['mediaItem']
-            return gp_wrapper.objects.core.media_item.CoreGPMediaItem._from_dict(self, dct)  # pylint: disable=protected-access #noqa
+            return gp_wrapper.objects.core.media_item.CoreMediaItem._from_dict(self, dct)  # pylint: disable=protected-access #noqa
         # TODO fix this
         print(json.dumps(j, indent=4))
         raise AttributeError("'newMediaItemResults' not found in response")
 
 
 __all__ = [
-    "CoreGooglePhotos"
+    "GooglePhotos"
 ]

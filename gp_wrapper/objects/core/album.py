@@ -1,17 +1,18 @@
 from typing import Optional, Iterable, Generator
 from requests.models import Response
-from .gp import CoreGooglePhotos
-from .media_item import MediaItemID, CoreGPMediaItem
+from .gp import GooglePhotos
+from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
-from ...utils import AlbumId, Path, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT, Printable, NextPageToken, AlbumMaskType
+from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
+    Printable, NextPageToken, AlbumMaskType
 
 
-class CoreGPAlbum(Printable):
+class CoreAlbum(Printable):
     """A wrapper class over Album object
     """
     # ================================= HELPER STATIC METHODS =================================
     @staticmethod
-    def _from_dict(gp: CoreGooglePhotos, dct: dict) -> "CoreGPAlbum":
+    def _from_dict(gp: GooglePhotos, dct: dict) -> "CoreAlbum":
         """creates a GooglePhotosAlbum object from a dict from a response object
 
         Args:
@@ -21,7 +22,7 @@ class CoreGPAlbum(Printable):
         Returns:
             GooglePhotosAlbum: the resulting object
         """
-        return CoreGPAlbum(
+        return CoreAlbum(
             gp,
             id=dct["id"],
             title=dct["title"],
@@ -34,7 +35,7 @@ class CoreGPAlbum(Printable):
         )
     # ================================= INSTANCE METHODS =================================
 
-    def __init__(self, gp: CoreGooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
+    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
                  mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
         self.gp = gp
         self.id = id
@@ -46,7 +47,7 @@ class CoreGPAlbum(Printable):
         self.coverPhotoMediaItemId = coverPhotoMediaItemId
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, CoreGPAlbum):
+        if not isinstance(other, CoreAlbum):
             return False
         return self.id == other.id
 
@@ -133,7 +134,7 @@ class CoreGPAlbum(Printable):
         return response
 
     @staticmethod
-    def create(gp: CoreGooglePhotos, album_name: str) -> "CoreGPAlbum":
+    def create(gp: GooglePhotos, album_name: str) -> "CoreAlbum":
         """Creates an album in a user's Google Photos library.
         see https://developers.google.com/photos/library/reference/rest/v1/albums/create
         Args:
@@ -154,11 +155,11 @@ class CoreGPAlbum(Printable):
             json=payload,
         )
         dct = response.json()
-        album = CoreGPAlbum._from_dict(gp, dct)
+        album = CoreAlbum._from_dict(gp, dct)
         return album
 
     @staticmethod
-    def get(gp: CoreGooglePhotos, albumId: str) -> Optional["CoreGPAlbum"]:
+    def get(gp: GooglePhotos, albumId: str) -> Optional["CoreAlbum"]:
         """Returns the album based on the specified albumId.
         The albumId must be the ID of an album owned by the user or a shared album that the user has joined.
 
@@ -178,16 +179,16 @@ class CoreGPAlbum(Printable):
         if response.status_code not in {200, 400}:
             response.raise_for_status()
         if response.status_code == 200:
-            return CoreGPAlbum._from_dict(gp, response.json())
+            return CoreAlbum._from_dict(gp, response.json())
         return None
 
     @staticmethod
     def list(
-        gp: CoreGooglePhotos,
+        gp: GooglePhotos,
         pageSize: int = 20,
         prevPageToken: Optional[NextPageToken] = None,
         excludeNonAppCreatedData: bool = False
-    ) -> tuple[Generator["CoreGPAlbum", None, None], Optional[NextPageToken]]:
+    ) -> tuple[Generator["CoreAlbum", None, None], Optional[NextPageToken]]:
         """Lists all albums shown to a user in the Albums tab of the Google Photos app.
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -219,8 +220,8 @@ class CoreGPAlbum(Printable):
         response.raise_for_status()
         j = response.json()
         if j:
-            return (CoreGPAlbum._from_dict(gp, dct) for dct in j["albums"]), j["nextPageToken"] if "nextPageToken" in j else None
-        empty: list[CoreGPAlbum] = []
+            return (CoreAlbum._from_dict(gp, dct) for dct in j["albums"]), j["nextPageToken"] if "nextPageToken" in j else None
+        empty: list[CoreAlbum] = []
         return (o for o in empty), None
 
     def patch(self, mask_type: AlbumMaskType, field_value) -> Response:

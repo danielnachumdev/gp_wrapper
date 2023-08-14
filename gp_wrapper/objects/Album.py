@@ -1,40 +1,41 @@
+import pathlib
 from typing import Optional, Generator, Iterable
 from requests.models import Response
+from gp_wrapper.objects.core.album import CoreAlbum
+from gp_wrapper.objects.core.gp import GooglePhotos
+from .core import GooglePhotos, CoreAlbum, CoreEnrichmentItem
+from .MediaItem import MediaItem
+from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType, NewMediaItem, SimpleMediaItem, MediaItemResult
+from ..utils import Path, NextPageToken
 
-from gp_wrapper.objects.core.album import CoreGPAlbum
-from gp_wrapper.objects.core.gp import CoreGooglePhotos
-from .core import CoreGooglePhotos, CoreGPAlbum, CoreEnrichmentItem
-from .MediaItem import GPMediaItem
-from ..utils import NextPageToken, PositionType, EnrichmentType, RequestType, AlbumMaskType
 
-
-class GPAlbum(CoreGPAlbum):
+class Album(CoreAlbum):
     # ================================= HELPER STATIC METHODS =================================
     @staticmethod
-    def _from_core(obj: CoreGPAlbum) -> "GPAlbum":
-        return GPAlbum(**obj.__dict__)
+    def _from_core(obj: CoreAlbum) -> "Album":
+        return Album(**obj.__dict__)
 
     # ================================= OVERRIDDEN STATIC METHODS =================================
     @staticmethod
-    def get(gp: CoreGooglePhotos, albumId: str) -> Optional["GPAlbum"]:
-        core = CoreGPAlbum.get(gp, albumId)
+    def get(gp: GooglePhotos, albumId: str) -> Optional["Album"]:
+        core = CoreAlbum.get(gp, albumId)
         if not core:
             return None
-        return GPAlbum._from_core(core)
+        return Album._from_core(core)
 
     @staticmethod
-    def create(gp: CoreGooglePhotos, album_name: str) -> "GPAlbum":
-        return GPAlbum._from_core(CoreGPAlbum.create(gp, album_name))
+    def create(gp: GooglePhotos, album_name: str) -> "Album":
+        return Album._from_core(CoreAlbum.create(gp, album_name))
 
     # ================================= ADDITIONAL STATIC METHODS =================================
 
     @staticmethod
     def all_albums(
-        gp: CoreGooglePhotos,
+        gp: GooglePhotos,
         pageSize: int = 20,
         prevPageToken: Optional[NextPageToken] = None,
         excludeNonAppCreatedData: bool = False
-    ) -> Generator["GPAlbum", None, None]:
+    ) -> Generator["Album", None, None]:
         """gets all albums serially
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -53,16 +54,16 @@ class GPAlbum(CoreGPAlbum):
         Yields:
             GooglePhotosAlbum: yields the albums one after the other
         """
-        gen, prevPageToken = GPAlbum.list(
+        gen, prevPageToken = Album.list(
             gp, pageSize, None, excludeNonAppCreatedData)
-        yield from (GPAlbum._from_core(g) for g in gen)
+        yield from (Album._from_core(g) for g in gen)
         while prevPageToken:
-            gen, prevPageToken = GPAlbum.list(
+            gen, prevPageToken = Album.list(
                 gp, pageSize, prevPageToken, excludeNonAppCreatedData)
-            yield from (GPAlbum._from_core(g) for g in gen)
+            yield from (Album._from_core(g) for g in gen)
 
     @staticmethod
-    def exists(gp: CoreGooglePhotos, /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["GPAlbum"]:
+    def exists(gp: GooglePhotos, /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["Album"]:
         """checks whether an album exists, if so - returns it
 
         *supply only one
@@ -78,18 +79,18 @@ class GPAlbum(CoreGPAlbum):
         if id is not None and name is not None:
             raise ValueError("must use only one between 'id' and 'name'")
         if id is not None:
-            core = GPAlbum.get(gp, id)
+            core = Album.get(gp, id)
             if core:
                 return core
             return None
-        for album in GPAlbum.all_albums(gp):
+        for album in Album.all_albums(gp):
             if name:
                 if album.title == name:
                     return album
         return None
 
     @staticmethod
-    def from_dict(gp: CoreGooglePhotos, dct: dict) -> "GPAlbum":
+    def from_dict(gp: GooglePhotos, dct: dict) -> "Album":
         """creates a GooglePhotosAlbum object from a dict from a response object
 
         Args:
@@ -99,7 +100,7 @@ class GPAlbum(CoreGPAlbum):
         Returns:
             GooglePhotosAlbum: the resulting object
         """
-        return GPAlbum(
+        return Album(
             gp,
             id=dct["id"],
             title=dct["title"],
@@ -156,7 +157,7 @@ class GPAlbum(CoreGPAlbum):
             ))
         return items
 
-    def get_media(self) -> Iterable[GPMediaItem]:
+    def get_media(self) -> Iterable[MediaItem]:
         """gets all media in album
 
         Returns:
@@ -177,7 +178,7 @@ class GPAlbum(CoreGPAlbum):
         if "mediaItems" not in j:
             return []
         for dct in j["mediaItems"]:
-            yield GPMediaItem.from_dict(self.gp, dct)
+            yield MediaItem.from_dict(self.gp, dct)
 
     def set_title(self, new_title: str) -> Response:
         """sets the title of an album
@@ -193,9 +194,29 @@ class GPAlbum(CoreGPAlbum):
             self.title = new_title
         return res
 
+    def upload_and_add(self, paths: Iterable[Path]) -> list[MediaItemResult]:
+        items: list[NewMediaItem] = []
+        for path in paths:
+            token = MediaItem.upload_media(self.gp, path)
+            filename = pathlib.Path(path).stem
+            item = NewMediaItem("", SimpleMediaItem(token, filename))
+            items.append(item)
+        batches: list[list[NewMediaItem]] = []
+        batch: list[NewMediaItem] = []
+        for item in items:
+            if len(batch) >= 50:
+                batches.append(batch)
+                batch = []
+            batch.append(item)
+        batches.append(batch)
+        res = []
+        for batch in batches:
+            res.extend(MediaItem.batchCreate(self.gp, batch, self.id))
+        return res
+
 
 __all__ = [
-    "GPAlbum",
+    "Album",
     "PositionType",
     "EnrichmentType"
 ]
