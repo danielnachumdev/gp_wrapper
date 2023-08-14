@@ -9,6 +9,28 @@ from ...utils import AlbumId, Path, PositionType, EnrichmentType, RequestType, A
 class CoreGPAlbum(Printable):
     """A wrapper class over Album object
     """
+    @staticmethod
+    def _from_dict(gp: CoreGooglePhotos, dct: dict) -> "CoreGPAlbum":
+        """creates a GooglePhotosAlbum object from a dict from a response object
+
+        Args:
+            gp (gp_wrapper.gp.GooglePhotos): the GooglePhotos object
+            dct (dict): the dict object containing the data
+
+        Returns:
+            GooglePhotosAlbum: the resulting object
+        """
+        return CoreGPAlbum(
+            gp,
+            id=dct["id"],
+            title=dct["title"],
+            productUrl=dct["productUrl"],
+            isWriteable=dct["isWriteable"],
+            mediaItemsCount=int(dct["mediaItemsCount"]
+                                ) if "mediaItemsCount" in dct else 0,
+            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else "",
+            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
+        )
 
     def __init__(self, gp: CoreGooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
                  mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
@@ -81,7 +103,7 @@ class CoreGPAlbum(Printable):
             json=payload,
         )
         dct = response.json()
-        album = CoreGPAlbum.from_dict(gp, dct)
+        album = CoreGPAlbum._from_dict(gp, dct)
         return album
 
     @staticmethod

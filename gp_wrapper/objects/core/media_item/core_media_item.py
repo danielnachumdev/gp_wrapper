@@ -13,6 +13,17 @@ class CoreGPMediaItem(Printable):
     """A wrapper class over Media Item object
     """
     @staticmethod
+    def _from_dict(gp: CoreGooglePhotos, dct: dict) -> "CoreGPMediaItem":
+        return CoreGPMediaItem(
+            gp,
+            id=dct["id"],
+            productUrl=dct["productUrl"],
+            mimeType=dct["mimeType"],
+            mediaMetadata=MediaMetadata.from_dict(dct["mediaMetadata"]),
+            filename=dct["filename"],
+        )
+
+    @staticmethod
     @slowdown(2)
     def upload_media(gp: CoreGooglePhotos, media: Path) -> str:
         image_data = open(media, 'rb').read()
