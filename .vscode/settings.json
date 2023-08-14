@@ -20,5 +20,8 @@
     },
     "mypy.dmypyExecutable": "${workspaceFolder}/venv/Scripts/dmypy.exe",
     "mypy.configFile": "mypy.ini",
-    "mypy.targets": []
+    "mypy.targets": [],
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
 }

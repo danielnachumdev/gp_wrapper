@@ -2,7 +2,7 @@ from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 from .filters import SearchFilter
 from ..gp import CoreGooglePhotos
-from ....utils import MaskTypes, RequestType, AlbumPosition, NewMediaItem,\
+from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
     MediaItemResult, MediaMetadata, Printable
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
@@ -122,7 +122,7 @@ class CoreGPMediaItem(Printable):
             pageToken: Optional[str] = None,
             filters: Optional[SearchFilter] = None,
             orderBy: Optional[str] = None
-    ) -> tuple[list[dict], Optional[NextPageToken]]:
+    ) -> tuple[Generator["CoreGPMediaItem", None, None], Optional[NextPageToken]]:
         """Searches for media items in a user's Google Photos library. 
         If no filters are set, then all media items in the user's library are returned. 
         If an album is set, all media items in the specified album are returned. 
@@ -202,8 +202,8 @@ class CoreGPMediaItem(Printable):
         j = response.json()
         mediaItems = j["mediaItems"] if "mediaItems" in j else []
         nextPageToken = j["nextPageToken"] if "nextPageToken" in j else None
-        # (GPMediaItem.from_dict(gp, dct) for dct in mediaItems), nextPageToken
-        return mediaItems, nextPageToken
+        return (CoreGPMediaItem._from_dict(gp, dct)
+                for dct in mediaItems), nextPageToken
 
     @staticmethod
     def list(gp: CoreGooglePhotos, pageSize: int = 25,
@@ -226,13 +226,13 @@ class CoreGPMediaItem(Printable):
         # (GPMediaItem.from_dict(gp, dct) for dct in mediaItems), nextPageToken
         return mediaItems, nextPageToken
 
-    def patch(self, field_name: MaskTypes, field_value: str) -> Response:
+    def patch(self, mask_type: MediaItemMaskTypes, field_value: str) -> Response:
         endpoint = f"https://photoslibrary.googleapis.com/v1/mediaItems/{self.id}"
         payload = {
-            field_name.value: field_value
+            mask_type.value: field_value
         }
         params = {
-            "updateMask": field_name.value
+            "updateMask": mask_type.value
         }
         response = self.gp.request(
             RequestType.PATCH, endpoint, json=payload, params=params)
@@ -249,6 +249,14 @@ class CoreGPMediaItem(Printable):
         self.filename = filename
         self.baseUrl = baseUrl
         self.description = description
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, CoreGPMediaItem):
+            return False
+        return self.id == other.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
 
 
 __all__ = [

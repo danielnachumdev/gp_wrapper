@@ -1,18 +1,18 @@
 import json
-import enum
+from enum import Enum
 from datetime import datetime
 from typing import Optional
 from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
 
 
-class RequestType(enum.Enum):
+class RequestType(Enum):
     GET = "get"
     POST = "post"
     PATCH = "patch"
 
 
-class PositionType(enum.Enum):
+class PositionType(Enum):
     """enum to be used with GooglePhotosAlbum.add_enrichment to specify
     the relative location of the enrichment in the album
     """
@@ -23,7 +23,7 @@ class PositionType(enum.Enum):
     AFTER_ENRICHMENT_ITEM = "AFTER_ENRICHMENT_ITEM"
 
 
-class EnrichmentType(enum.Enum):
+class EnrichmentType(Enum):
     """enum to be used with GooglePhotosAlbum.add_enrichment to specify the type of enrichment
     """
     TEXT_ENRICHMENT = "textEnrichment"
@@ -31,7 +31,7 @@ class EnrichmentType(enum.Enum):
     MAP_ENRICHMENT = "mapEnrichment"
 
 
-class MaskTypes(enum.Enum):
+class MediaItemMaskTypes(Enum):
     """
     available mask values to update for a media item
     see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/patch#query-parameters
@@ -39,7 +39,12 @@ class MaskTypes(enum.Enum):
     DESCRIPTION = "description"
 
 
-class RelativeItemType(enum.Enum):
+class AlbumMaskType(Enum):
+    TITLE = "title"
+    COVER_PHOTOS_MEDIA_ITEM_ID = "coverPhotoMediaItemId"
+
+
+class RelativeItemType(Enum):
     relativeMediaItemId = "relativeMediaItemId",
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 

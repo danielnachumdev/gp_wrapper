@@ -1,37 +1,40 @@
 from typing import Optional, Generator, Iterable
 from requests.models import Response
+
+from gp_wrapper.objects.core.album import CoreGPAlbum
+from gp_wrapper.objects.core.gp import CoreGooglePhotos
 from .core import CoreGooglePhotos, CoreGPAlbum, CoreEnrichmentItem
 from .MediaItem import GPMediaItem
-from ..utils import AlbumId, NextPageToken, PositionType, EnrichmentType, RequestType
-
-
-DEFAULT_PAGE_SIZE: int = 20
+from ..utils import NextPageToken, PositionType, EnrichmentType, RequestType, AlbumMaskType
 
 
 class GPAlbum(CoreGPAlbum):
+    # ================================= HELPER STATIC METHODS =================================
     @staticmethod
-    def _get_albums_helper(gp: CoreGooglePhotos):
-        endpoint = "https://photoslibrary.googleapis.com/v1/albums"
-        # body: dict[str, str | int] = {
-        #     # "pageSize": page_size,
-        #     # "excludeNonAppCreatedData": excludeNonAppCreatedData
-        # }
-        # if prevPageToken is not None:
-        #     body["pageToken"] = prevPageToken
-        response = gp.request(RequestType.GET, endpoint,
-                              use_json_headers=False)
-        j = response.json()
-        if "albums" not in j:
-            # TODO
-            return ""
-        for dct in j["albums"]:
-            yield GPAlbum.from_dict(gp, dct)
-        return j["nextPageToken"]
+    def _from_core(obj: CoreGPAlbum) -> "GPAlbum":
+        return GPAlbum(**obj.__dict__)
+
+    # ================================= OVERRIDDEN STATIC METHODS =================================
+    @staticmethod
+    def get(gp: CoreGooglePhotos, albumId: str) -> Optional["GPAlbum"]:
+        core = CoreGPAlbum.get(gp, albumId)
+        if not core:
+            return None
+        return GPAlbum._from_core(core)
 
     @staticmethod
-    def all_albums(gp: CoreGooglePhotos, page_size: int = DEFAULT_PAGE_SIZE,
-                   prevPageToken: Optional[NextPageToken] = None, excludeNonAppCreatedData: bool = False)\
-            -> Generator["GPAlbum", None, Optional[NextPageToken]]:
+    def create(gp: CoreGooglePhotos, album_name: str) -> "GPAlbum":
+        return GPAlbum._from_core(CoreGPAlbum.create(gp, album_name))
+
+    # ================================= ADDITIONAL STATIC METHODS =================================
+
+    @staticmethod
+    def all_albums(
+        gp: CoreGooglePhotos,
+        pageSize: int = 20,
+        prevPageToken: Optional[NextPageToken] = None,
+        excludeNonAppCreatedData: bool = False
+    ) -> Generator["GPAlbum", None, None]:
         """gets all albums serially
 
         pageSize (int): Maximum number of albums to return in the response.
@@ -50,22 +53,39 @@ class GPAlbum(CoreGPAlbum):
         Yields:
             GooglePhotosAlbum: yields the albums one after the other
         """
-        endpoint = "https://photoslibrary.googleapis.com/v1/albums"
-        # body: dict[str, str | int] = {
-        #     # "pageSize": page_size,
-        #     # "excludeNonAppCreatedData": excludeNonAppCreatedData
-        # }
-        # if prevPageToken is not None:
-        #     body["pageToken"] = prevPageToken
-        response = gp.request(RequestType.GET, endpoint,
-                              use_json_headers=False)
-        j = response.json()
-        if "albums" not in j:
+        gen, prevPageToken = GPAlbum.list(
+            gp, pageSize, None, excludeNonAppCreatedData)
+        yield from (GPAlbum._from_core(g) for g in gen)
+        while prevPageToken:
+            gen, prevPageToken = GPAlbum.list(
+                gp, pageSize, prevPageToken, excludeNonAppCreatedData)
+            yield from (GPAlbum._from_core(g) for g in gen)
+
+    @staticmethod
+    def exists(gp: CoreGooglePhotos, /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["GPAlbum"]:
+        """checks whether an album exists, if so - returns it
+
+        *supply only one
+        Args:
+            name (Optional[str]): supply a name to get first album with this name [NOT EFFICIENT]
+            id (Optional[str]): supply id to get album with this exact id [EFFICIENT]
+        Raises:
+            ValueError: if both identifiers are used
+
+        Returns:
+             Optional[GPAlbum]: returns the album if it exists or None
+        """
+        if id is not None and name is not None:
+            raise ValueError("must use only one between 'id' and 'name'")
+        if id is not None:
+            core = GPAlbum.get(gp, id)
+            if core:
+                return core
             return None
-        for dct in j["albums"]:
-            yield GPAlbum.from_dict(gp, dct)
-        if "nextPageToken" in j:
-            return j["nextPageToken"]
+        for album in GPAlbum.all_albums(gp):
+            if name:
+                if album.title == name:
+                    return album
         return None
 
     @staticmethod
@@ -91,36 +111,10 @@ class GPAlbum(CoreGPAlbum):
             coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
         )
 
-    @staticmethod
-    def from_id(gp: CoreGooglePhotos, album_id: AlbumId) -> Optional["GPAlbum"]:
-        """will return the album with the specified id if it exists
-        """
-        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{album_id}"
-        response = gp.request(RequestType.GET, endpoint,
-                              use_json_headers=False)
-        if response.status_code == 200:
-            return GPAlbum.from_dict(gp, response.json())
-        return None
-
-    @staticmethod
-    def from_name(gp: CoreGooglePhotos, album_name: str, create_on_missing: bool = False)\
-            -> Generator["GPAlbum", None, None]:
-        'will return all albums with the specified name'
-        has_yielded: bool = False
-        for album in GPAlbum.all_albums(gp):
-            if album.title == album_name:
-                has_yielded = True
-                yield album
-
-        if create_on_missing:
-            if not has_yielded:
-                yield GPAlbum.create(gp, album_name)
-
-        return
-
-    def add_description(self, description_parts: Iterable[str],
-                        relative_position: PositionType = PositionType.FIRST_IN_ALBUM,
-                        optional_additional_data: Optional[dict] = None) \
+    # ================================= ADDITIONAL INSTANCE METHODS =================================
+    def add_text(self, description_parts: Iterable[str],
+                 relative_position: PositionType = PositionType.FIRST_IN_ALBUM,
+                 optional_additional_data: Optional[dict] = None) \
             -> Iterable[tuple[Optional[Response], Optional[CoreEnrichmentItem]]]:
         """a facade function that uses 'add_enrichment' to simplify adding a description
 
@@ -185,17 +179,19 @@ class GPAlbum(CoreGPAlbum):
         for dct in j["mediaItems"]:
             yield GPMediaItem.from_dict(self.gp, dct)
 
-    @staticmethod
-    def exists(gp: "gp_wrapper.gp.GooglePhotos", /, name: Optional[str] = None, id: Optional[str] = None) -> Optional["GPAlbum"]:
-        for album in GPAlbum.all_albums(gp):
-            if name:
-                if album.title == name:
-                    return album
-            if id:
-                if album.id == id:
-                    return album
+    def set_title(self, new_title: str) -> Response:
+        """sets the title of an album
 
-        return None
+        Args:
+            new_title (str): new title to set to
+
+        Returns:
+            Response: response of this request
+        """
+        res = self.patch(AlbumMaskType.TITLE, new_title)
+        if res.status_code == 200:
+            self.title = new_title
+        return res
 
 
 __all__ = [
