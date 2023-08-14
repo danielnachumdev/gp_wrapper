@@ -4,7 +4,8 @@ import requests
 from requests.models import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
-import media_item  # type:ignore #noqa # pylint: disable=import-error
+# type:ignore #noqa # pylint: disable=import-error
+import gp_wrapper.objects.core.media_item
 from ...utils import RequestType, Printable, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
 
 
@@ -46,7 +47,7 @@ class CoreGooglePhotos(Printable):
     def _json_headers(self) -> dict:
         return self._construct_headers({"Content-Type": "application/json"})
 
-    def _get_media_item_id(self, upload_token: str) -> "media_item.CoreGPMediaItem":
+    def _get_media_item_id(self, upload_token: str) -> "gp_wrapper.objects.core.media_item.CoreGPMediaItem":
         payload = {
             "newMediaItems": [
                 {
@@ -65,7 +66,7 @@ class CoreGooglePhotos(Printable):
         j = response.json()
         if "newMediaItemResults" in j:
             dct = j['newMediaItemResults'][0]['mediaItem']
-            return media_item.CoreGPMediaItem.from_dict(self, dct)
+            return gp_wrapper.objects.core.media_item.CoreGPMediaItem.from_dict(self, dct)
 
         # TODO fix this
         print(json.dumps(j, indent=4))

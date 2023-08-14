@@ -26,8 +26,8 @@ class CoreGPMediaItem(Printable):
 
     @staticmethod
     def batchCreate(
-            gp: "gp_wrapper.objects.core.gp.CoreGooglePhotos", newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
-                albumPosition: Optional[AlbumPosition] = None) \
+            gp: CoreGooglePhotos, newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
+        albumPosition: Optional[AlbumPosition] = None) \
             -> Generator[MediaItemResult, None, None]:
         """Creates one or more media items in a user's Google Photos library.
             This is the second step for creating a media item.\n
