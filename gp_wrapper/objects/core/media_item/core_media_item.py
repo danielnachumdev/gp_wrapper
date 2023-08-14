@@ -3,7 +3,7 @@ from requests.models import Response
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
-    MediaItemResult, MediaMetadata, Printable
+    MediaItemResult, MediaMetadata, Printable, HeaderType
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown
@@ -62,7 +62,7 @@ class CoreMediaItem(Printable):
         response = gp.request(
             RequestType.POST,
             UPLOAD_MEDIA_ITEM_ENDPOINT,
-            data=image_data,
+            data=image_data
         )
         response.raise_for_status()
         token = response.content.decode('utf-8')
@@ -151,8 +151,12 @@ class CoreMediaItem(Printable):
         params = {
             "mediaItemIds": ids
         }
-        response = gp.request(RequestType.GET, ENDPOINT,
-                              params=params, use_json_headers=False)
+        response = gp.request(
+            RequestType.GET,
+            ENDPOINT,
+            HeaderType.DEFAULT,
+            params=params,
+        )
 
         response.raise_for_status()
         for dct in response.json()["mediaItemResults"]:
@@ -299,8 +303,12 @@ class CoreMediaItem(Printable):
         }
         if pageToken:
             params["pageToken"] = pageToken
-        response = gp.request(RequestType.GET, endpoint,
-                              params=params, use_json_headers=False)
+        response = gp.request(
+            RequestType.GET,
+            endpoint,
+            HeaderType.DEFAULT,
+            params=params
+        )
         response.raise_for_status()
         j = response.json()
         mediaItems = j["mediaItems"] if "mediaItems" in j else []

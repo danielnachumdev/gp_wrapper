@@ -22,6 +22,12 @@ class RequestType(Enum):
     PATCH = "patch"
 
 
+class HeaderType(Enum):
+    DEFAULT = 0
+    JSON = 1
+    OCTET = 2
+
+
 class PositionType(Enum):
     """enum to be used with GooglePhotosAlbum.add_enrichment to specify
     the relative location of the enrichment in the album

@@ -4,7 +4,7 @@ from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
 from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
-    Printable, NextPageToken, AlbumMaskType
+    Printable, NextPageToken, AlbumMaskType, HeaderType
 
 
 class CoreAlbum(Printable):
@@ -183,8 +183,11 @@ class CoreAlbum(Printable):
             CoreGPAlbum: the desired album
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{albumId}"
-        response = gp.request(RequestType.GET, endpoint,
-                              use_json_headers=False)
+        response = gp.request(
+            RequestType.GET,
+            endpoint,
+            HeaderType.DEFAULT
+        )
         if response.status_code not in {200, 400}:
             response.raise_for_status()
         if response.status_code == 200:
@@ -224,8 +227,12 @@ class CoreAlbum(Printable):
         }
         if prevPageToken is not None:
             payload["pageToken"] = prevPageToken
-        response = gp.request(RequestType.GET, endpoint, params=payload,
-                              use_json_headers=False)
+        response = gp.request(
+            RequestType.GET,
+            endpoint,
+            HeaderType.DEFAULT,
+            params=payload,
+        )
         response.raise_for_status()
         j = response.json()
         token: Optional[NextPageToken] = None
@@ -288,5 +295,8 @@ class CoreAlbum(Printable):
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:unshare"
         response = self.gp.request(
-            RequestType.POST, endpoint, use_json_headers=False)
+            RequestType.POST,
+            endpoint,
+            HeaderType.DEFAULT
+        )
         return response

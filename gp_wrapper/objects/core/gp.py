@@ -5,7 +5,7 @@ from requests.models import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 import gp_wrapper.objects.core.media_item
-from ...utils import RequestType, Printable, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
+from ...utils import RequestType, Printable, HeaderType, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
 
 
 class GooglePhotos(Printable):
@@ -23,28 +23,36 @@ class GooglePhotos(Printable):
         self.session = requests.Session()
         self.session.credentials = self.credentials  # type:ignore
 
-    def request(self, req_type: RequestType, endpoint: str, *args, use_json_headers: bool = True, **kwargs) -> Response:
-        if use_json_headers:
-            headers = self._json_headers()
-        else:
-            headers = self._construct_headers()
+    def request(
+            self,
+            req_type: RequestType,
+            endpoint: str,
+            header_type: HeaderType = HeaderType.JSON,
+            **kwargs
+    ) -> Response:
+        """core request function to handle request for all other classes
+
+        Args:
+            req_type (RequestType): the type of request
+            endpoint (str): the endpoint 
+            header_type (HeaderType, optional): which header type should the request use. Defaults to HeaderType.JSON.
+
+        Returns:
+            Response: the response of the request
+        """
+        headers: dict = {"Authorization": f"Bearer {self.credentials.token}"}
+        if header_type == HeaderType.JSON:
+            headers["Content-Type"] = "application/json"
+        elif header_type == HeaderType.OCTET:
+            headers["Content-Type"] = "application/octet-stream"
+            headers["X-Goog-Upload-Content-Type"] = ""
+            headers["X-Goog-Upload-Protocol"] = "raw"
         request_map: dict[RequestType, Callable[..., Response]] = {
             RequestType.GET: self.session.get,
             RequestType.POST: self.session.post,
             RequestType.PATCH: self.session.patch,
         }
-        return request_map[req_type](url=endpoint, headers=headers, *args, **kwargs)
-
-    def _construct_headers(self, additional_headers: Optional[dict] = None) -> dict:
-        BASE_HEADERS: dict = {
-            "Authorization": f"Bearer {self.credentials.token}"}
-        res = dict(BASE_HEADERS)
-        if additional_headers is not None:
-            res.update(additional_headers)
-        return res
-
-    def _json_headers(self) -> dict:
-        return self._construct_headers({"Content-Type": "application/json"})
+        return request_map[req_type](url=endpoint, headers=headers, **kwargs)
 
     def _get_media_item_id(self, upload_token: str) -> "gp_wrapper.objects.core.media_item.CoreMediaItem":
         payload = {
@@ -59,8 +67,8 @@ class GooglePhotos(Printable):
         response = self.request(
             RequestType.POST,
             MEDIA_ITEMS_CREATE_ENDPOINT,
+            HeaderType.DEFAULT,
             json=payload,
-            use_json_headers=False
         )
         j = response.json()
         if "newMediaItemResults" in j:
