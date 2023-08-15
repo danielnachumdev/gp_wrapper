@@ -1,3 +1,4 @@
+import pathlib
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 from .filters import SearchFilter
@@ -42,7 +43,7 @@ class CoreMediaItem(Printable):
 
     @staticmethod
     @slowdown(60//DEFAULT_QUOTA)
-    def upload_media(gp: GooglePhotos, media: Path) -> UploadToken:
+    def upload_media(gp: GooglePhotos, media: Path, *, tqdm_position: Optional[int] = None) -> UploadToken:
         """uploads a single media item to Google's servers
         NOTE: This does not add it to your library!
         NOTE: To add the media to your library, you need to use MediaItem.batchCreate afterwards
@@ -51,6 +52,7 @@ class CoreMediaItem(Printable):
         Args:
             gp (GooglePhotos): Google Photos Object
             media (Path): the path to the media
+            tqdm_position (Optional[int]): if this value is supplied then a tqdm progress bar will be displayed at the specified position showing the progress of the upload
 
         Raises:
             HTTPError: If the HTTP request has failed
@@ -59,9 +61,18 @@ class CoreMediaItem(Printable):
             UploadToken: the upload token to pass to be used in other functions
         """
         image_data = open(media, 'rb').read()
+        tqdm_options = dict(
+            position=tqdm_position
+
+        )
+        header_type = HeaderType.JSON
+        if pathlib.Path(media).suffix in {}:
+            header_type = HeaderType.OCTET
         response = gp.request(
             RequestType.POST,
             UPLOAD_MEDIA_ITEM_ENDPOINT,
+            header_type=header_type,
+            tqdm_options=tqdm_options if tqdm_position is not None else None,
             data=image_data
         )
         response.raise_for_status()
@@ -123,7 +134,10 @@ class CoreMediaItem(Printable):
             body["albumPosition"] = albumPosition.to_dict()
 
         response = gp.request(
-            RequestType.POST, MEDIA_ITEMS_CREATE_ENDPOINT, json=body)
+            RequestType.POST,
+            MEDIA_ITEMS_CREATE_ENDPOINT,
+            json=body
+        )
         response.raise_for_status()
         media_items = []
         for dct in response.json()["newMediaItemResults"]:

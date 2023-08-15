@@ -1,10 +1,12 @@
 import json
+import math
+# from requests_toolbelt import MultipartEncoder
+from tqdm import tqdm
 from enum import Enum
 from datetime import datetime
-from typing import Optional, IO
+from typing import Optional, IO, Iterable
 from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
-
 Milliseconds = float
 Seconds = float
 MediaItemID = str
@@ -284,6 +286,63 @@ class MediaMetadata(Dictable, Printable):
 
     def to_dict(self) -> dict:
         return json.loads(json.dumps(self.__dict__))
+
+
+# class MultiPartEncoderWithProgress(MultipartEncoder):
+#     def __init__(self, tqdm_options: dict, fields, boundary=None, encoding='utf-8'):
+#         super().__init__(fields, boundary, encoding)
+#         self.tqdm_options = tqdm_options
+
+#     def _load(self, amount):
+#         if not hasattr(self, "tqdm"):
+#             setattr(self, "tqdm", tqdm(**self.tqdm_options))
+#         MultipartEncoder._load(self, amount)
+#         self.tqdm.update(amount/self.len * 100)  # pylint: disable=no-member
+
+
+class ProgressBarInjector:
+    """allows seeing an indication of the progress of the request using tqdm
+    """
+
+    def __init__(self, data: bytes, options: dict, chunk_size: int = 8192) -> None:
+        self.data = data
+        self.options = options
+        self._len = len(self.data)
+        self.chunk_size = chunk_size
+
+    def __len__(self) -> int:
+        return self._len
+
+    def __iter__(self) -> Iterable[bytes]:
+        num_of_chunks = math.ceil(len(self)/self.chunk_size)
+        chunks = (self.data[i:i + self.chunk_size]
+                  for i in range(0, len(self), self.chunk_size))
+        KB = 1024
+        MB = 1024*KB
+        GB = 1024*MB
+
+        if len(self)/GB > 1:
+            total = len(self)/GB
+            unit = "GB"
+        elif len(self)/MB > 1:
+            total = len(self)/MB
+            unit = "MB"
+        else:
+            total = len(self)/KB
+            unit = "KB"
+        update_amount = total/num_of_chunks
+        t = tqdm(
+            chunks,
+            **self.options,
+            total=total,
+            unit=unit,
+            desc="Uploading",
+            bar_format="{l_bar}{bar}| {n:.2f}/{total:.2f}" +
+            unit+" [{elapsed}<{remaining}, {rate_fmt}]"
+        )
+        for chunk in chunks:
+            yield chunk
+            t.update(update_amount)
 
 
 SCOPES = [

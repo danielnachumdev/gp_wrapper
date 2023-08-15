@@ -1,11 +1,14 @@
 import json
-from typing import Optional,  Callable
 import requests
+from tqdm import tqdm
+from io import BytesIO
+from typing import Optional,  Callable, Iterable
 from requests.models import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 import gp_wrapper.objects.core.media_item
-from ...utils import RequestType, Printable, HeaderType, MimeType, EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
+from ...utils import RequestType, Printable, HeaderType, MimeType, ProgressBarInjector
+from ...utils import EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT
 
 
 class GooglePhotos(Printable):
@@ -27,7 +30,8 @@ class GooglePhotos(Printable):
             req_type: RequestType,
             endpoint: str,
             header_type: HeaderType = HeaderType.JSON,
-            mime_type: Optional[MimeType] = None,
+            # mime_type: Optional[MimeType] = None,
+            tqdm_options: Optional[dict] = None,
             **kwargs
     ) -> Response:
         """core request function to handle request for all other classes
@@ -43,11 +47,14 @@ class GooglePhotos(Printable):
         headers: dict = {"Authorization": f"Bearer {self.credentials.token}"}
         if header_type != HeaderType.DEFAULT:
             headers["Content-Type"] = f"application/{header_type.value}"
-        elif header_type == HeaderType.OCTET:
-            if mime_type is None:
-                raise ValueError("If the header type is HeaderType.OCTET")
-            headers["X-Goog-Upload-Content-Type"] = mime_type.value
-            headers["X-Goog-Upload-Protocol"] = "raw"
+
+        if tqdm_options:
+            kwargs['data'] = \
+                ProgressBarInjector(
+                    kwargs['data'],
+                    tqdm_options
+            )
+
         request_map: dict[RequestType, Callable[..., Response]] = {
             RequestType.GET: self.session.get,
             RequestType.POST: self.session.post,

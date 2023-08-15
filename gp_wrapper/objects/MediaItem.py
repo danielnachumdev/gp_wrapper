@@ -109,7 +109,7 @@ class MediaItem(CoreMediaItem):
             yield from lst
 
     @staticmethod
-    def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> list["MediaItem"]:
+    def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> list[Optional["MediaItem"]]:
         items: list[NewMediaItem] = []
         for path in paths:
             token = MediaItem.upload_media(gp, path)
