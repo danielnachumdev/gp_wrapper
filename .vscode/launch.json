@@ -11,9 +11,6 @@
             "program": "tmp.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": [
-                "./src/Day1-Aliertos"
-            ]
         }
     ]
 }

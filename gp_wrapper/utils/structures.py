@@ -158,6 +158,9 @@ class Dictable(ABC):
 class SimpleMediaItem(Dictable, Printable):
     # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate#SimpleMediaItem
     def __init__(self, uploadToken: str, fileName: str) -> None:
+        if len(fileName) > 255:
+            raise ValueError(
+                "'fileName' must not be more than 255 characters or the request will fail")
         self.uploadToken = uploadToken
         self.fileName = fileName
 
@@ -272,11 +275,11 @@ class MediaMetadata(Dictable, Printable):
     def from_dict(dct: dict) -> "MediaMetadata":
         return MediaMetadata(**dct)
 
-    def __init__(self, creationTime: str, width: str, height: str, photo: Optional[dict] = None) -> None:
+    def __init__(self, creationTime: str, width: Optional[str] = None, height: Optional[str] = None, photo: Optional[dict] = None) -> None:
         FORMAT = "%Y-%m-%dT%H:%M:%SZ"
         self.creationTime: datetime = datetime.strptime(creationTime, FORMAT)
-        self.width: int = int(width)
-        self.height: int = int(height)
+        self.width: Optional[int] = int(width) if width else None
+        self.height: Optional[int] = int(height) if height else None
         self.photo = photo
 
     def to_dict(self) -> dict:
