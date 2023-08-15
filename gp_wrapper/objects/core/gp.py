@@ -1,6 +1,6 @@
 import json
 import requests
-from tqdm import tqdm
+import tqdm
 from io import BytesIO
 from typing import Optional,  Callable, Iterable
 from requests.models import Response
@@ -31,7 +31,7 @@ class GooglePhotos(Printable):
             endpoint: str,
             header_type: HeaderType = HeaderType.JSON,
             # mime_type: Optional[MimeType] = None,
-            tqdm_options: Optional[dict] = None,
+            tqdm: Optional[tqdm.tqdm] = None,
             **kwargs
     ) -> Response:
         """core request function to handle request for all other classes
@@ -48,11 +48,11 @@ class GooglePhotos(Printable):
         if header_type != HeaderType.DEFAULT:
             headers["Content-Type"] = f"application/{header_type.value}"
 
-        if tqdm_options:
+        if tqdm is not None:
             kwargs['data'] = \
                 ProgressBarInjector(
                     kwargs['data'],
-                    tqdm_options
+                    tqdm
             )
 
         request_map: dict[RequestType, Callable[..., Response]] = {

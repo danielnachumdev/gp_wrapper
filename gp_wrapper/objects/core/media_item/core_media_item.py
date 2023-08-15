@@ -1,4 +1,5 @@
 import pathlib
+import tqdm
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response
 from .filters import SearchFilter
@@ -43,7 +44,7 @@ class CoreMediaItem(Printable):
 
     @staticmethod
     @slowdown(60//DEFAULT_QUOTA)
-    def upload_media(gp: GooglePhotos, media: Path, *, tqdm_position: Optional[int] = None) -> UploadToken:
+    def upload_media(gp: GooglePhotos, media: Path, *, tqdm: Optional[tqdm.tqdm] = None) -> UploadToken:
         """uploads a single media item to Google's servers
         NOTE: This does not add it to your library!
         NOTE: To add the media to your library, you need to use MediaItem.batchCreate afterwards
@@ -61,10 +62,6 @@ class CoreMediaItem(Printable):
             UploadToken: the upload token to pass to be used in other functions
         """
         image_data = open(media, 'rb').read()
-        tqdm_options = dict(
-            position=tqdm_position
-
-        )
         header_type = HeaderType.JSON
         if pathlib.Path(media).suffix in {}:
             header_type = HeaderType.OCTET
@@ -72,7 +69,7 @@ class CoreMediaItem(Printable):
             RequestType.POST,
             UPLOAD_MEDIA_ITEM_ENDPOINT,
             header_type=header_type,
-            tqdm_options=tqdm_options if tqdm_position is not None else None,
+            tqdm=tqdm,
             data=image_data
         )
         response.raise_for_status()

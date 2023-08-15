@@ -304,10 +304,10 @@ class ProgressBarInjector:
     """allows seeing an indication of the progress of the request using tqdm
     """
 
-    def __init__(self, data: bytes, options: dict, chunk_size: int = 8192) -> None:
+    def __init__(self, data: bytes, tqdm: tqdm, chunk_size: int = 8192) -> None:
         self.data = data
-        self.options = options
         self._len = len(self.data)
+        self.tqdm = tqdm
         self.chunk_size = chunk_size
 
     def __len__(self) -> int:
@@ -330,19 +330,14 @@ class ProgressBarInjector:
         else:
             total = len(self)/KB
             unit = "KB"
+
         update_amount = total/num_of_chunks
-        t = tqdm(
-            chunks,
-            **self.options,
-            total=total,
-            unit=unit,
-            desc="Uploading",
-            bar_format="{l_bar}{bar}| {n:.2f}/{total:.2f}" +
-            unit+" [{elapsed}<{remaining}, {rate_fmt}]"
-        )
+        self.tqdm.unit = unit
+        self.tqdm.total = total
         for chunk in chunks:
             yield chunk
-            t.update(update_amount)
+            self.tqdm.update(update_amount)
+        self.tqdm.reset()
 
 
 SCOPES = [
