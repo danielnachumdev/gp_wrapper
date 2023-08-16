@@ -1,7 +1,7 @@
 import pathlib
-import tqdm
+import tqdm  # pylint: disable=import-error
 from typing import Iterable, Optional, Union, Generator, Union
-from requests.models import Response
+from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\

@@ -1,7 +1,7 @@
 import json
 import math
 # from requests_toolbelt import MultipartEncoder
-from tqdm import tqdm  # pylint: disable=import-error
+from tqdm import tqdm  # type:ignore # pylint: disable=import-error
 from enum import Enum
 from datetime import datetime
 from typing import Optional, IO, Iterable

@@ -2,10 +2,6 @@ import functools
 import time
 import platform
 from typing import Callable, TypeVar, Generator, Iterable, Any, ForwardRef
-from typing_extensions import ParamSpec
-
-T = TypeVar("T")
-P = ParamSpec("P")
 
 
 def _get_python_version_untyped() -> tuple:
@@ -31,6 +27,13 @@ def get_python_version() -> tuple[int, int, int]:
     """
     return _get_python_version_untyped()  # type:ignore
 
+
+if get_python_version() < (3, 9):
+    from typing_extensions import ParamSpec
+else:
+    from typing import ParamSpec  # type:ignore
+P = ParamSpec("P")
+T = TypeVar("T")
 
 # def declare(obj: Union[Callable[P, T], Optional[str]] = None):
 #     """will print a string when entering a function

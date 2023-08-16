@@ -3,7 +3,7 @@ from .....utils import Printable, Dictable, get_python_version
 if get_python_version() < (3, 9):
     from typing import List as t_list  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import t_list  # type:ignore
+    from builtins import list as t_list  # type:ignore
 
 
 class Date(Printable, Dictable):

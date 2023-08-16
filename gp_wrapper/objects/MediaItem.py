@@ -3,7 +3,7 @@ import math
 from threading import Thread, Semaphore
 from typing import Generator, Optional, Iterable, Union
 from queue import Queue
-from requests.models import Response
+from requests.models import Response  # pylint: disable=import-error
 from gp_wrapper.objects.core.gp import GooglePhotos
 from gp_wrapper.objects.core.media_item.core_media_item import CoreMediaItem
 from gp_wrapper.objects.core.media_item.filters import SearchFilter
@@ -14,7 +14,7 @@ from ..utils import MediaItemMaskTypes, NewMediaItem, SimpleMediaItem, get_pytho
 if get_python_version() < (3, 9):
     from typing import List as t_list, Tuple as t_tuple  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import t_list, t_tuple  # type:ignore
+    from builtins import list as t_list, tuple as t_tuple  # type:ignore
 
 
 class MediaItem(CoreMediaItem):
