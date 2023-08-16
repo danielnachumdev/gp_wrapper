@@ -98,7 +98,7 @@ def json_default(obj: Any) -> str:
     return str(id(obj))
 
 
-def slowdown(interval: ForwardRef("Seconds")):
+def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
     """will slow down function calls to a minimum of specified call over time span
 
     Args:
