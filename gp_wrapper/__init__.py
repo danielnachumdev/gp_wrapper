@@ -1,5 +1,5 @@
-from .objects import *
 from .utils.structures import *
+from .objects import *
 
 
 # def help() -> None:

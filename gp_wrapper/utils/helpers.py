@@ -1,16 +1,20 @@
 import functools
 import time
 import platform
-from typing import Callable, TypeVar, Generator, Iterable, Any
+from typing import Callable, TypeVar, Generator, Iterable, Any, ForwardRef
 from typing_extensions import ParamSpec
-from .structures import Seconds, Milliseconds
+
 T = TypeVar("T")
 P = ParamSpec("P")
 
 
 def _get_python_version_untyped() -> tuple:
     values = (int(v) for v in platform.python_version().split("."))
-    return tuple(values)  # type:ignore
+    try:
+        return tuple(values)  # type:ignore
+    except:
+        from builtins import tuple
+        return tuple(values)  # type:ignore
 
 
 if _get_python_version_untyped() < (3, 9):
@@ -91,12 +95,13 @@ def json_default(obj: Any) -> str:
     return str(id(obj))
 
 
-def slowdown(interval: Seconds):
+def slowdown(interval: ForwardRef("Seconds")):
     """will slow down function calls to a minimum of specified call over time span
 
     Args:
         minimal_interval_duration (float): duration to space out calls
     """
+    from .structures import Seconds, Milliseconds
     if not isinstance(interval, (int, float)):
         raise ValueError("minimal_interval_duration must be a number")
 

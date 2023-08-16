@@ -1,9 +1,9 @@
 from typing import Optional
 from .....utils import Printable, Dictable, get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as list  # pylint: disable=ungrouped-imports,redefined-builtin
+    from typing import List as t_list  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import list  # type:ignore
+    from builtins import t_list  # type:ignore
 
 
 class Date(Printable, Dictable):
@@ -42,7 +42,7 @@ class DateFilter(Printable, Dictable):
         ranges (Optional[list[DateRange]], optional): List of dates ranges that match the media items' creation date. A maximum of 5 dates ranges can be included per request. Defaults to None.
     """
 
-    def __init__(self, dates: Optional[list[Date]] = None, ranges: Optional[list[DateRange]] = None) -> None:
+    def __init__(self, dates: Optional[t_list[Date]] = None, ranges: Optional[t_list[DateRange]] = None) -> None:
         if not dates and not ranges:
             raise ValueError(
                 "When creating a DateFilter, must supply at-least one of 'dates', 'ranges'")

@@ -6,9 +6,9 @@ from .enrichment_item import CoreEnrichmentItem
 from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
     Printable, NextPageToken, AlbumMaskType, HeaderType, get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as list, Tuple as tuple, Dict as dict  # pylint: disable=ungrouped-imports,redefined-builtin
+    from typing import List as t_list, Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import list, tuple, dict  # type:ignore
+    from builtins import list as t_list, tuple as t_tuple, dict as t_dict  # type:ignore
 
 
 class CoreAlbum(Printable):
@@ -70,7 +70,7 @@ class CoreAlbum(Printable):
     # ================================= API METHODS =================================
     def addEnrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
                       album_position: PositionType, album_position_data: Optional[dict] = None)\
-            -> tuple[Optional[Response], Optional[CoreEnrichmentItem]]:
+            -> t_tuple[Optional[Response], Optional[CoreEnrichmentItem]]:
         """Adds an enrichment at a specified position in a defined album.
 
         Args:
@@ -84,7 +84,7 @@ class CoreAlbum(Printable):
             EnrichmentItem: the item added
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
-        body: dict[str, dict] = {
+        body: t_dict[str, dict] = {
             "newEnrichmentItem": {
                 enrichment_type.value: enrichment_data
             },
@@ -204,7 +204,7 @@ class CoreAlbum(Printable):
         pageSize: int = 20,
         prevPageToken: Optional[NextPageToken] = None,
         excludeNonAppCreatedData: bool = False
-    ) -> tuple[Optional[Generator["CoreAlbum", None, None]], Optional[NextPageToken]]:
+    ) -> t_tuple[Optional[Generator["CoreAlbum", None, None]], Optional[NextPageToken]]:
         """Lists all albums shown to a user in the Albums tab of the Google Photos app.
 
         pageSize (int): Maximum number of albums to return in the response.

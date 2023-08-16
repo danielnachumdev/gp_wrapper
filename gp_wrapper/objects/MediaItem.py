@@ -12,9 +12,9 @@ from .core import GooglePhotos, CoreMediaItem, MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE
     MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE, MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS
 from ..utils import MediaItemMaskTypes, NewMediaItem, SimpleMediaItem, get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as list, Tuple as tuple  # pylint: disable=ungrouped-imports,redefined-builtin
+    from typing import List as t_list, Tuple as t_tuple  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import list, tuple  # type:ignore
+    from builtins import t_list, t_tuple  # type:ignore
 
 
 class MediaItem(CoreMediaItem):
@@ -113,15 +113,15 @@ class MediaItem(CoreMediaItem):
             yield from lst
 
     @staticmethod
-    def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> list[Optional["MediaItem"]]:
-        items: list[NewMediaItem] = []
+    def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> t_list[Optional["MediaItem"]]:
+        items: t_list[NewMediaItem] = []
         for path in paths:
             token = MediaItem.upload_media(gp, path)
             filename = pathlib.Path(path).stem
             item = NewMediaItem("", SimpleMediaItem(token, filename))
             items.append(item)
-        batches: list[list[NewMediaItem]] = []
-        batch: list[NewMediaItem] = []
+        batches: t_list[t_list[NewMediaItem]] = []
+        batch: t_list[NewMediaItem] = []
         for item in items:
             if len(batch) >= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS:
                 batches.append(batch)
@@ -141,7 +141,7 @@ class MediaItem(CoreMediaItem):
         gp: GooglePhotos,
         pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
         pageToken: Optional[str] = None
-    ) -> tuple[list["MediaItem"], Optional[NextPageToken]]:
+    ) -> t_tuple[t_list["MediaItem"], Optional[NextPageToken]]:
         lst, token = CoreMediaItem.list(gp, pageSize, pageToken)
         return [MediaItem._from_core(o) for o in lst], token
     # ================================= ADDITIONAL INSTANCE METHODS =================================

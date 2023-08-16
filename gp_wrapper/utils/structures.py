@@ -1,7 +1,7 @@
 import json
 import math
 # from requests_toolbelt import MultipartEncoder
-from tqdm import tqdm
+from tqdm import tqdm  # pylint: disable=import-error
 from enum import Enum
 from datetime import datetime
 from typing import Optional, IO, Iterable
@@ -9,9 +9,9 @@ from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
 from .helpers import get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as list
+    from typing import List as t_list
 else:
-    from builtins import list
+    from builtins import list as t_list
 Milliseconds = float
 Seconds = float
 MediaItemID = str
@@ -254,7 +254,7 @@ class Status(Printable):
             details=dct["details"] if "details" in dct else None
         )
 
-    def __init__(self, message: str, code: Optional[StatusCode] = None, details: Optional[list[dict]] = None) -> None:
+    def __init__(self, message: str, code: Optional[StatusCode] = None, details: Optional[t_list[dict]] = None) -> None:
         self.message = message
         self.code = code
         self.details = details
