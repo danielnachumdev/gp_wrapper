@@ -1,14 +1,14 @@
-from typing import Optional, Iterable, Generator, Union
-from requests.models import Response
+from typing import Optional, Iterable, Generator
+from requests.models import Response  # pylint: disable=import-error
 from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
 from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
     Printable, NextPageToken, AlbumMaskType, HeaderType, get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as t_list, Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
+    from typing import Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
-    from builtins import list as t_list, tuple as t_tuple, dict as t_dict  # type:ignore
+    from builtins import tuple as t_tuple, dict as t_dict  # type:ignore
 
 
 class CoreAlbum(Printable):
@@ -40,16 +40,16 @@ class CoreAlbum(Printable):
             id=dct["id"],
             title=dct["title"],
             productUrl=dct["productUrl"],
-            isWriteable=dct["isWriteable"],
+            isWriteable=dct["isWriteable"] if "isWriteable" in dct else None,
             mediaItemsCount=int(dct["mediaItemsCount"]
                                 ) if "mediaItemsCount" in dct else 0,
-            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else "",
-            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
+            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else None,
+            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else None,
         )
     # ================================= INSTANCE METHODS =================================
 
-    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
-                 mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
+    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: Optional[bool] = None,
+                 mediaItemsCount: int = 0, coverPhotoBaseUrl: Optional[str] = None, coverPhotoMediaItemId: Optional[MediaItemID] = None):
         self.gp = gp
         self.id = id
         self.title = title
