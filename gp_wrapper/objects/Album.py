@@ -7,7 +7,11 @@ from .core import GooglePhotos, CoreAlbum, CoreEnrichmentItem
 from .MediaItem import MediaItem
 from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType,\
     NewMediaItem, SimpleMediaItem, MediaItemResult
-from ..utils import Path, NextPageToken
+from ..utils import Path, NextPageToken, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list, Tuple as tuple
+else:
+    from builtins import list, tuple  # type:ignore
 
 
 class Album(CoreAlbum):

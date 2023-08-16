@@ -7,6 +7,11 @@ from datetime import datetime
 from typing import Optional, IO, Iterable
 from abc import ABC, abstractmethod
 import gp_wrapper  # pylint: disable=unused-import
+from .helpers import get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list
+else:
+    from builtins import list
 Milliseconds = float
 Seconds = float
 MediaItemID = str

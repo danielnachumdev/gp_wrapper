@@ -4,7 +4,11 @@ from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
 from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
-    Printable, NextPageToken, AlbumMaskType, HeaderType
+    Printable, NextPageToken, AlbumMaskType, HeaderType, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list, Tuple as tuple, Dict as dict  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list, tuple, dict  # type:ignore
 
 
 class CoreAlbum(Printable):

@@ -1,7 +1,7 @@
 import pathlib
 import math
 from threading import Thread, Semaphore
-from typing import Generator, Optional, Iterable
+from typing import Generator, Optional, Iterable, Union
 from queue import Queue
 from requests.models import Response
 from gp_wrapper.objects.core.gp import GooglePhotos
@@ -10,7 +10,11 @@ from gp_wrapper.objects.core.media_item.filters import SearchFilter
 from gp_wrapper.utils import NextPageToken, Path
 from .core import GooglePhotos, CoreMediaItem, MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,\
     MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE, MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS
-from ..utils import MediaItemMaskTypes, NewMediaItem, SimpleMediaItem
+from ..utils import MediaItemMaskTypes, NewMediaItem, SimpleMediaItem, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list, Tuple as tuple  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list, tuple  # type:ignore
 
 
 class MediaItem(CoreMediaItem):
@@ -41,10 +45,10 @@ class MediaItem(CoreMediaItem):
     @staticmethod
     def search_all(
         gp: GooglePhotos,
-        albumId: str | None = None,
+        albumId: Optional[str] = None,
         pageSize: int = 25,
-        filters: SearchFilter | None = None,
-        orderBy: str | None = None,
+        filters: Optional[SearchFilter] = None,
+        orderBy: Optional[str] = None,
         tokens_to_use: int = math.inf,  # type:ignore
         pre_fetch: bool = False
     ) -> Generator["MediaItem", None, None]:
@@ -137,7 +141,7 @@ class MediaItem(CoreMediaItem):
         gp: GooglePhotos,
         pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
         pageToken: Optional[str] = None
-    ) -> tuple[list["MediaItem"], NextPageToken | None]:
+    ) -> tuple[list["MediaItem"], Optional[NextPageToken]]:
         lst, token = CoreMediaItem.list(gp, pageSize, pageToken)
         return [MediaItem._from_core(o) for o in lst], token
     # ================================= ADDITIONAL INSTANCE METHODS =================================

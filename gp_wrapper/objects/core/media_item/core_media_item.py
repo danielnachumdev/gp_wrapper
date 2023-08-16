@@ -1,6 +1,6 @@
 import pathlib
 import tqdm
-from typing import Iterable, Optional, Union, Generator
+from typing import Iterable, Optional, Union, Generator, Union
 from requests.models import Response
 from .filters import SearchFilter
 from ..gp import GooglePhotos
@@ -8,8 +8,11 @@ from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaIt
     MediaItemResult, MediaMetadata, Printable, HeaderType
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
-from ....utils import slowdown
-
+from ....utils import slowdown, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list, Tuple as tuple, Dict as dict  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list, tuple, dict  # type:ignore
 
 MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE: int = 25
 MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE: int = 100
@@ -354,7 +357,7 @@ class CoreMediaItem(Printable):
 
     # ================================= INSTANCE METHODS =================================
     def __init__(self, gp: GooglePhotos, id: MediaItemID, productUrl: str,
-                 mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
+                 mimeType: str, mediaMetadata: Union[dict, MediaMetadata], filename: str, baseUrl: str = "", description: str = "") -> None:
         """_summary_
 
         Args:

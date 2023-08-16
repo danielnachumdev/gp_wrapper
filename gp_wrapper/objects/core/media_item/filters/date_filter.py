@@ -1,5 +1,9 @@
 from typing import Optional
-from .....utils import Printable, Dictable
+from .....utils import Printable, Dictable, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as list  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list  # type:ignore
 
 
 class Date(Printable, Dictable):
