@@ -63,7 +63,9 @@ class CoreMediaItem(Printable):
         """
         image_data = open(media, 'rb').read()
         header_type = HeaderType.JSON
-        if pathlib.Path(media).suffix in {}:
+
+        # TODO add more options
+        if pathlib.Path(media).suffix.lower() in {".mov", ".mp4", ".wmv"}:
             header_type = HeaderType.OCTET
         response = gp.request(
             RequestType.POST,
