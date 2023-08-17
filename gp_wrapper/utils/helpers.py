@@ -1,7 +1,6 @@
 import functools
 import time
-from typing import Optional, Union, Callable, TypeVar, Generator, Iterable, Any
-from typing_extensions import ParamSpec
+from typing import Callable, TypeVar, Generator, Iterable, Any
 from .structures import Seconds, Milliseconds
 T = TypeVar("T")
 
