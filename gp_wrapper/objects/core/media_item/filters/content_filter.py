@@ -1,6 +1,10 @@
 from typing import Optional
 from enum import Enum
-from .....utils import Printable, Dictable
+from .....utils import Printable, Dictable, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as t_list  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list as t_list  # type:ignore
 
 
 class ContentCategory(Enum):
@@ -60,7 +64,7 @@ class ContentFilter(Printable, Dictable):
         ValueError: if 'excludedContentCategories' has more than 10 values
     """
 
-    def __init__(self, includedContentCategories: Optional[list[ContentCategory]] = None, excludedContentCategories: Optional[list[ContentCategory]] = None) -> None:
+    def __init__(self, includedContentCategories: Optional[t_list[ContentCategory]] = None, excludedContentCategories: Optional[t_list[ContentCategory]] = None) -> None:
         if not includedContentCategories and not excludedContentCategories:
             raise ValueError(
                 "When creating a ContentFilter, one must supply at-least one from 'includedContentCategories', 'excludedContentCategories'")

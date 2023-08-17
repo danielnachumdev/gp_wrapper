@@ -1,15 +1,18 @@
 import pathlib
-import tqdm
-from typing import Iterable, Optional, Union, Generator
-from requests.models import Response
+import tqdm  # pylint: disable=import-error
+from typing import Iterable, Optional, Union, Generator, Union
+from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
     MediaItemResult, MediaMetadata, Printable, HeaderType
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
-from ....utils import slowdown
-
+from ....utils import slowdown, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as t_list, Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import list as t_list, tuple as t_tuple, dict as t_dict  # type:ignore
 
 MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE: int = 25
 MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE: int = 100
@@ -83,7 +86,7 @@ class CoreMediaItem(Printable):
     def batchCreate(
             gp: GooglePhotos, newMediaItems: Iterable[NewMediaItem], albumId: Optional[AlbumId] = None,
         albumPosition: Optional[AlbumPosition] = None) \
-            -> list[MediaItemResult]:
+            -> t_list[MediaItemResult]:
         """Creates one or more media items in a user's Google Photos library.
             This is the second step for creating a media item.\n
             For details regarding Step 1, uploading the raw bytes to a Google Server, see GPMediaItem.upload_media\n
@@ -117,10 +120,10 @@ class CoreMediaItem(Printable):
                 the contents of the response.
         """
         # TODO: If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item. Doing so will result in a BAD REQUEST error.
-        if not (0 < len(list(newMediaItems)) <= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS):
+        if not (0 <= len(list(newMediaItems)) <= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS):
             raise ValueError(
                 f"'newMediaItems' can only hold a maximum of {MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS} items per call")
-        body: dict[str, Union[str, list, dict]] = {
+        body: t_dict[str, Union[str, list, dict]] = {
             # see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate
             "newMediaItems": [item.to_dict() for item in newMediaItems]
         }
@@ -202,7 +205,7 @@ class CoreMediaItem(Printable):
             pageToken: Optional[str] = None,
             filters: Optional[SearchFilter] = None,
             orderBy: Optional[str] = None
-    ) -> tuple[Generator["CoreMediaItem", None, None], Optional[NextPageToken]]:
+    ) -> t_tuple[Generator["CoreMediaItem", None, None], Optional[NextPageToken]]:
         """Searches for media items in a user's Google Photos library. 
         If no filters are set, then all media items in the user's library are returned. 
         If an album is set, all media items in the specified album are returned. 
@@ -288,7 +291,7 @@ class CoreMediaItem(Printable):
 
     @staticmethod
     def list(gp: GooglePhotos, pageSize: int = MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE,
-             pageToken: Optional[str] = None) -> tuple[list["CoreMediaItem"], Optional[NextPageToken]]:
+             pageToken: Optional[str] = None) -> t_tuple[t_list["CoreMediaItem"], Optional[NextPageToken]]:
         """List all media items from a user's Google Photos library.
 
         Args:
@@ -356,7 +359,7 @@ class CoreMediaItem(Printable):
 
     # ================================= INSTANCE METHODS =================================
     def __init__(self, gp: GooglePhotos, id: MediaItemID, productUrl: str,
-                 mimeType: str, mediaMetadata: dict | MediaMetadata, filename: str, baseUrl: str = "", description: str = "") -> None:
+                 mimeType: str, mediaMetadata: Union[dict, MediaMetadata], filename: str, baseUrl: str = "", description: str = "") -> None:
         """_summary_
 
         Args:

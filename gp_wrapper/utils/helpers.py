@@ -1,7 +1,38 @@
 import functools
 import time
-from typing import Callable, TypeVar, Generator, Iterable, Any
-from .structures import Seconds, Milliseconds
+import platform
+from typing import Callable, TypeVar, Generator, Iterable, Any, ForwardRef
+
+
+def _get_python_version_untyped() -> tuple:
+    values = (int(v) for v in platform.python_version().split("."))
+    try:
+        return tuple(values)  # type:ignore
+    except:
+        from builtins import tuple
+        return tuple(values)  # type:ignore
+
+
+if _get_python_version_untyped() < (3, 9):
+    from typing import Tuple as tuple, List as list
+else:
+    from builtins import tuple, list  # type:ignore
+
+
+def get_python_version() -> tuple[int, int, int]:
+    """return the version of python that is currently running this code
+
+    Returns:
+        tuple[int, int, int]: version
+    """
+    return _get_python_version_untyped()  # type:ignore
+
+
+if get_python_version() < (3, 9):
+    from typing_extensions import ParamSpec
+else:
+    from typing import ParamSpec  # type:ignore
+P = ParamSpec("P")
 T = TypeVar("T")
 
 
@@ -42,16 +73,17 @@ def json_default(obj: Any) -> str:
     return str(id(obj))
 
 
-def slowdown(interval: Seconds):
+def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
     """will slow down function calls to a minimum of specified call over time span
 
     Args:
         minimal_interval_duration (float): duration to space out calls
     """
-    if not isinstance(interval, int | float):
+    from .structures import Seconds, Milliseconds
+    if not isinstance(interval, (int, float)):
         raise ValueError("minimal_interval_duration must be a number")
 
-    def deco(func: Callable) -> Callable:
+    def deco(func: Callable[P, T]) -> Callable[P, T]:
         # q: Queue = Queue()
         index = 0
         # lock = Lock()
@@ -84,8 +116,9 @@ def slowdown(interval: Seconds):
 
 
 __all__ = [
-    "declare",
+    # "declare",
     "split_iterable",
     "json_default",
-    "slowdown"
+    "slowdown",
+    "get_python_version"
 ]

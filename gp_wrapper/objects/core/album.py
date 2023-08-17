@@ -1,10 +1,14 @@
-from typing import Optional, Iterable, Generator, Union
-from requests.models import Response
+from typing import Optional, Iterable, Generator
+from requests import Response
 from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
 from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
-    Printable, NextPageToken, AlbumMaskType, HeaderType
+    Printable, NextPageToken, AlbumMaskType, HeaderType, get_python_version
+if get_python_version() < (3, 9):
+    from typing import Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
+else:
+    from builtins import tuple as t_tuple, dict as t_dict  # type:ignore
 
 
 class CoreAlbum(Printable):
@@ -36,16 +40,16 @@ class CoreAlbum(Printable):
             id=dct["id"],
             title=dct["title"],
             productUrl=dct["productUrl"],
-            isWriteable=dct["isWriteable"],
+            isWriteable=dct["isWriteable"] if "isWriteable" in dct else None,
             mediaItemsCount=int(dct["mediaItemsCount"]
                                 ) if "mediaItemsCount" in dct else 0,
-            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else "",
-            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else "",
+            coverPhotoBaseUrl=dct["coverPhotoBaseUrl"] if "coverPhotoBaseUrl" in dct else None,
+            coverPhotoMediaItemId=dct["coverPhotoMediaItemId"] if "coverPhotoMediaItemId" in dct else None,
         )
     # ================================= INSTANCE METHODS =================================
 
-    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: bool,
-                 mediaItemsCount: int, coverPhotoBaseUrl: str, coverPhotoMediaItemId: MediaItemID):
+    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: Optional[bool] = None,
+                 mediaItemsCount: int = 0, coverPhotoBaseUrl: Optional[str] = None, coverPhotoMediaItemId: Optional[MediaItemID] = None):
         self.gp = gp
         self.id = id
         self.title = title
@@ -66,7 +70,7 @@ class CoreAlbum(Printable):
     # ================================= API METHODS =================================
     def addEnrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
                       album_position: PositionType, album_position_data: Optional[dict] = None)\
-            -> tuple[Optional[Response], Optional[CoreEnrichmentItem]]:
+            -> t_tuple[Optional[Response], Optional[CoreEnrichmentItem]]:
         """Adds an enrichment at a specified position in a defined album.
 
         Args:
@@ -80,7 +84,7 @@ class CoreAlbum(Printable):
             EnrichmentItem: the item added
         """
         endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
-        body: dict[str, dict] = {
+        body: t_dict[str, dict] = {
             "newEnrichmentItem": {
                 enrichment_type.value: enrichment_data
             },
@@ -200,7 +204,7 @@ class CoreAlbum(Printable):
         pageSize: int = 20,
         prevPageToken: Optional[NextPageToken] = None,
         excludeNonAppCreatedData: bool = False
-    ) -> tuple[Optional[Generator["CoreAlbum", None, None]], Optional[NextPageToken]]:
+    ) -> t_tuple[Optional[Generator["CoreAlbum", None, None]], Optional[NextPageToken]]:
         """Lists all albums shown to a user in the Albums tab of the Google Photos app.
 
         pageSize (int): Maximum number of albums to return in the response.

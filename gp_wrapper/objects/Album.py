@@ -1,13 +1,17 @@
 import pathlib
 from typing import Optional, Generator, Iterable
-from requests.models import Response
+from requests.models import Response  # type:ignore
 from gp_wrapper.objects.core.album import CoreAlbum
 from gp_wrapper.objects.core.gp import GooglePhotos
 from .core import GooglePhotos, CoreAlbum, CoreEnrichmentItem
 from .MediaItem import MediaItem
 from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType,\
     NewMediaItem, SimpleMediaItem, MediaItemResult
-from ..utils import Path, NextPageToken
+from ..utils import Path, NextPageToken, get_python_version
+if get_python_version() < (3, 9):
+    from typing import List as t_list, Tuple as t_tuple
+else:
+    from builtins import list as t_list, tuple as t_tuple  # type:ignore
 
 
 class Album(CoreAlbum):
@@ -135,7 +139,7 @@ class Album(CoreAlbum):
         description_parts: Iterable[str],
         relative_position: PositionType = PositionType.FIRST_IN_ALBUM,
         optional_additional_data: Optional[dict] = None
-    ) -> Iterable[tuple[Optional[Response], Optional[CoreEnrichmentItem]]]:
+    ) -> Iterable[t_tuple[Optional[Response], Optional[CoreEnrichmentItem]]]:
         """a facade function that uses 'add_enrichment' to simplify adding a description
 
         Args:
@@ -155,7 +159,7 @@ class Album(CoreAlbum):
                     f"the description parts should be less than {HARD_LIMIT} characters"
                     "long because of a hard limit google employs")
 
-        chunks: list[str] = []
+        chunks: t_list[str] = []
         tmp_chunk = ""
         for text in parts:
             if len(tmp_chunk) + len(text) >= 1000:
@@ -216,7 +220,7 @@ class Album(CoreAlbum):
     def upload_and_add(
         self,
         paths: Iterable[Path]
-    ) -> list[MediaItemResult]:
+    ) -> t_list[MediaItemResult]:
         """uploads the media to the library and also adds them to current album
 
         Args:
@@ -226,14 +230,14 @@ class Album(CoreAlbum):
             list[MediaItemResult]: resulting objects of the uploads
         """
         # same code as MediaItem.add_to_library but it is more memory efficient this way
-        items: list[NewMediaItem] = []
+        items: t_list[NewMediaItem] = []
         for path in paths:
             token = MediaItem.upload_media(self.gp, path)
             filename = pathlib.Path(path).stem
             item = NewMediaItem("", SimpleMediaItem(token, filename))
             items.append(item)
-        batches: list[list[NewMediaItem]] = []
-        batch: list[NewMediaItem] = []
+        batches: t_list[t_list[NewMediaItem]] = []
+        batch: t_list[NewMediaItem] = []
         for item in items:
             if len(batch) >= 50:
                 batches.append(batch)
