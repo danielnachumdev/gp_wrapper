@@ -14,12 +14,12 @@ def _get_python_version_untyped() -> tuple:
 
 
 if _get_python_version_untyped() < (3, 9):
-    from typing import Tuple as tuple, List as list
+    from typing import Tuple as t_tuple, List as t_list
 else:
-    from builtins import tuple, list  # type:ignore
+    from builtins import tuple as t_tuple, list as t_list  # type:ignore
 
 
-def get_python_version() -> tuple[int, int, int]:
+def get_python_version() -> t_tuple[int, int, int]:
     """return the version of python that is currently running this code
 
     Returns:
@@ -36,7 +36,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def split_iterable(iterable: Iterable[T], batch_size: int) -> Generator[list[T], None, None]:
+def split_iterable(iterable: Iterable[T], batch_size: int) -> Generator[t_list[T], None, None]:
     """will yield sub-iterables each the size of 'batch_size'
 
     Args:
@@ -46,7 +46,7 @@ def split_iterable(iterable: Iterable[T], batch_size: int) -> Generator[list[T],
     Yields:
         Generator[list[T], None, None]: resulting value
     """
-    batch: list[T] = []
+    batch: t_list[T] = []
     for i, item in enumerate(iterable):
         if i % batch_size == 0:
             if len(batch) > 0:

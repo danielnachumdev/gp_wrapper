@@ -6,7 +6,7 @@ from requests import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 import gp_wrapper.objects.core.media_item
-from ...utils import RequestType, Printable, HeaderType, ProgressBarInjector
+from ...utils import RequestType, Printable, HeaderType, ProgressBarInjector, ProgressBar
 from ...utils import EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, get_python_version
 if get_python_version() < (3, 9):
     from typing import Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
@@ -34,7 +34,7 @@ class GooglePhotos(Printable):
             endpoint: str,
             header_type: HeaderType = HeaderType.JSON,
             # mime_type: Optional[MimeType] = None,
-            tqdm: Optional[tqdm.tqdm] = None,
+            pbar: Optional[ProgressBar] = None,
             **kwargs
     ) -> Response:
         """core request function to handle request for all other classes
@@ -51,11 +51,11 @@ class GooglePhotos(Printable):
         if header_type != HeaderType.DEFAULT:
             headers["Content-Type"] = f"application/{header_type.value}"
 
-        if tqdm is not None:
+        if pbar is not None:
             kwargs['data'] = \
                 ProgressBarInjector(
                     kwargs['data'],
-                    tqdm
+                    pbar
             )
 
         request_map: t_dict[RequestType, Callable[..., Response]] = {

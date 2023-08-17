@@ -304,44 +304,6 @@ class MediaMetadata(Dictable, Printable):
 #         self.tqdm.update(amount/self.len * 100)  # pylint: disable=no-member
 
 
-class ProgressBarInjector:
-    """allows seeing an indication of the progress of the request using tqdm
-    """
-
-    def __init__(self, data: bytes, tqdm: tqdm, chunk_size: int = 8192) -> None:
-        self.data = data
-        self._len = len(self.data)
-        self.tqdm = tqdm
-        self.chunk_size = chunk_size
-
-    def __len__(self) -> int:
-        return self._len
-
-    def __iter__(self) -> Iterable[bytes]:
-        num_of_chunks = math.ceil(len(self)/self.chunk_size)
-        chunks = (self.data[i:i + self.chunk_size]
-                  for i in range(0, len(self), self.chunk_size))
-        KB = 1024
-        MB = 1024*KB
-        GB = 1024*MB
-
-        if len(self)/GB > 1:
-            total = len(self)/GB
-            unit = "GB"
-        elif len(self)/MB > 1:
-            total = len(self)/MB
-            unit = "MB"
-        else:
-            total = len(self)/KB
-            unit = "KB"
-
-        update_amount = total/num_of_chunks
-        self.tqdm.unit = unit
-        self.tqdm.total = total
-        for chunk in chunks:
-            yield chunk
-            self.tqdm.update(update_amount)
-        self.tqdm.reset()
 
 
 SCOPES = [

@@ -1,11 +1,10 @@
 import pathlib
-import tqdm  # pylint: disable=import-error
-from typing import Iterable, Optional, Union, Generator, Union
+from typing import Iterable, Optional, Union, Generator
 from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
-    MediaItemResult, MediaMetadata, Printable, HeaderType
+    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown, get_python_version
@@ -47,7 +46,7 @@ class CoreMediaItem(Printable):
 
     @staticmethod
     @slowdown(60//DEFAULT_QUOTA)
-    def upload_media(gp: GooglePhotos, media: Path, *, tqdm: Optional[tqdm.tqdm] = None) -> UploadToken:
+    def upload_media(gp: GooglePhotos, media: Path, *, pbar: Optional[ProgressBar] = None) -> UploadToken:
         """uploads a single media item to Google's servers
         NOTE: This does not add it to your library!
         NOTE: To add the media to your library, you need to use MediaItem.batchCreate afterwards
@@ -74,7 +73,7 @@ class CoreMediaItem(Printable):
             RequestType.POST,
             UPLOAD_MEDIA_ITEM_ENDPOINT,
             header_type=header_type,
-            tqdm=tqdm,
+            pbar=pbar,
             data=image_data
         )
         response.raise_for_status()
@@ -358,20 +357,17 @@ class CoreMediaItem(Printable):
         return response
 
     # ================================= INSTANCE METHODS =================================
-    def __init__(self, gp: GooglePhotos, id: MediaItemID, productUrl: str,
-                 mimeType: str, mediaMetadata: Union[dict, MediaMetadata], filename: str, baseUrl: str = "", description: str = "") -> None:
-        """_summary_
-
-        Args:
-            gp (GooglePhotos): _description_
-            id (MediaItemID): _description_
-            productUrl (str): _description_
-            mimeType (str): _description_
-            mediaMetadata (dict | MediaMetadata): _description_
-            filename (str): _description_
-            baseUrl (str, optional): _description_. Defaults to "".
-            description (str, optional): _description_. Defaults to "".
-        """
+    def __init__(
+            self,
+            gp: GooglePhotos,
+            id: MediaItemID,  # pylint: disable=redefined-builtin
+            productUrl: str,
+            mimeType: str,
+            mediaMetadata: Union[dict, MediaMetadata],
+            filename: str,
+            baseUrl: str = "",
+            description: str = ""
+    ) -> None:
         self.gp = gp
         self.id = id
         self.productUrl = productUrl
