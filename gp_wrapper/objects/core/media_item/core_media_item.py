@@ -1,11 +1,11 @@
 import pathlib
-from typing import Iterable, Optional, Union, Generator
+from typing import Iterable, Optional, Union, Generator, Any
 from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
-    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar
-from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
+    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo
+from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken, Url
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown, get_python_version
 if get_python_version() < (3, 9):
@@ -36,12 +36,16 @@ class CoreMediaItem(Printable):
     @staticmethod
     def _from_dict(gp: GooglePhotos, dct: dict) -> "CoreMediaItem":
         return CoreMediaItem(
-            gp,
+            gp=gp,
             id=dct["id"],
             productUrl=dct["productUrl"],
             mimeType=dct["mimeType"],
             mediaMetadata=MediaMetadata.from_dict(dct["mediaMetadata"]),
             filename=dct["filename"],
+            baseUrl=dct["baseUrl"] if "baseUrl" in dct else None,
+            description=dct["description"] if "description" in dct else None,
+            contributorInfo=ContributorInfo.from_dict(
+                dct["ContributorInfo"]) if "ContributorInfo" in dct else None
         )
 
     @staticmethod
@@ -142,7 +146,8 @@ class CoreMediaItem(Printable):
         response.raise_for_status()
         media_items = []
         for dct in response.json()["newMediaItemResults"]:
-            media_items.append(MediaItemResult.from_dict(gp, dct))
+            dct["gp"] = gp
+            media_items.append(MediaItemResult.from_dict(dct))
         return media_items
 
     @staticmethod
@@ -363,20 +368,22 @@ class CoreMediaItem(Printable):
             id: MediaItemID,  # pylint: disable=redefined-builtin
             productUrl: str,
             mimeType: str,
-            mediaMetadata: Union[dict, MediaMetadata],
+            mediaMetadata: MediaMetadata,
             filename: str,
-            baseUrl: str = "",
-            description: str = ""
+            baseUrl: Optional[str] = None,
+            description: Optional[str] = None,
+            contributorInfo: Optional[ContributorInfo] = None,
     ) -> None:
         self.gp = gp
-        self.id = id
-        self.productUrl = productUrl
-        self.mimeType = mimeType
+        self.__id = id
+        self.__productUrl = productUrl
+        self.__mimeType = mimeType
         self.mediaMetadata: MediaMetadata = mediaMetadata if isinstance(
             mediaMetadata, MediaMetadata) else MediaMetadata.from_dict(mediaMetadata)
         self.filename = filename
         self.baseUrl = baseUrl
-        self.description = description
+        self.__description = description
+        self.__contributorInfo = contributorInfo
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CoreMediaItem):
@@ -385,6 +392,49 @@ class CoreMediaItem(Printable):
 
     def __hash__(self) -> int:
         return hash(self.id)
+
+    @property
+    def id(self) -> MediaItemID:
+        """Identifier for the media item. 
+        This is a persistent identifier that can be used between sessions to identify this media item.
+
+        Returns:
+            str: the id of the MediaItem
+        """
+        return self.__id
+
+    @property
+    def productUrl(self) -> Url:
+        """Google Photos URL for the media item. 
+        This link is available to the user only if they're signed in. 
+        When retrieved from an album search, the URL points to the item inside the album.
+
+        Returns:
+            Url
+        """
+        return self.__productUrl
+
+    @property
+    def mimeType(self):
+        return self.__mimeType
+
+    @property
+    def description(self):
+        """Description of the media item. 
+        This is shown to the user in the item's info section in the Google Photos app. 
+        Must be shorter than 1000 characters. 
+        Only include text written by users. 
+        Descriptions should add context and help users understand media. 
+        Do not include any auto-generated strings such as filenames, tags, and other metadata.
+
+        Returns:
+            Optional[str]
+        """
+        return self.__description
+
+    @property
+    def contributorInfo(self):
+        return self.__contributorInfo
 
 
 __all__ = [
