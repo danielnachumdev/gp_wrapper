@@ -1,8 +1,6 @@
 import pathlib
 from typing import Optional, Generator, Iterable
 from requests.models import Response  # type:ignore
-from gp_wrapper.objects.core.album import CoreAlbum
-from gp_wrapper.objects.core.gp import GooglePhotos
 from .core import GooglePhotos, CoreAlbum, CoreEnrichmentItem
 from .MediaItem import MediaItem
 from ..utils import PositionType, EnrichmentType, RequestType, AlbumMaskType,\
@@ -29,7 +27,16 @@ class Album(CoreAlbum):
     # ================================= HELPER STATIC METHODS =================================
     @staticmethod
     def _from_core(obj: CoreAlbum) -> "Album":
-        return Album(**obj.__dict__)
+        return Album(
+            gp=obj.gp,
+            id=obj.id,
+            title=obj.title,
+            productUrl=obj.productUrl,
+            isWriteable=obj.isWriteable,
+            mediaItemsCount=obj.mediaItemsCount,
+            coverPhotoBaseUrl=obj.coverPhotoBaseUrl,
+            coverPhotoMediaItemId=obj.coverPhotoMediaItemId
+        )
 
     # ================================= OVERRIDDEN STATIC METHODS =================================
     @staticmethod

@@ -3,15 +3,18 @@ from requests import Response
 from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
-from ...utils import AlbumId, PositionType, EnrichmentType, RequestType, ALBUMS_ENDPOINT,\
-    Printable, NextPageToken, AlbumMaskType, HeaderType, get_python_version
+from ...utils import PositionType, EnrichmentType, RequestType, Printable, AlbumMaskType, HeaderType,\
+    OnlyPrivateFieldsMeta
+from ...utils import AlbumId, NextPageToken
+from ...utils import get_python_version
+from ...utils import ALBUMS_ENDPOINT
 if get_python_version() < (3, 9):
     from typing import Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
     from builtins import tuple as t_tuple, dict as t_dict  # type:ignore
 
 
-class CoreAlbum(Printable):
+class CoreAlbum(Printable, metaclass=OnlyPrivateFieldsMeta):
     """the basic wrapper class over 'Album' object
      Args:
             gp (GooglePhotos): Google Photos object
@@ -48,8 +51,17 @@ class CoreAlbum(Printable):
         )
     # ================================= INSTANCE METHODS =================================
 
-    def __init__(self, gp: GooglePhotos, id: AlbumId, title: str, productUrl: str, isWriteable: Optional[bool] = None,
-                 mediaItemsCount: int = 0, coverPhotoBaseUrl: Optional[str] = None, coverPhotoMediaItemId: Optional[MediaItemID] = None):
+    def __init__(
+        self,
+        gp: GooglePhotos,
+        id: AlbumId,  # pylint: disable=redefined-builtin
+        title: str,
+        productUrl: str,
+        isWriteable: Optional[bool] = None,
+        mediaItemsCount: int = 0,
+        coverPhotoBaseUrl: Optional[str] = None,
+        coverPhotoMediaItemId: Optional[MediaItemID] = None
+    ) -> None:
         self.gp = gp
         self.id = id
         self.title = title
@@ -67,7 +79,8 @@ class CoreAlbum(Printable):
     def __hash__(self) -> int:
         return hash(self.id)
 
-    # ================================= API METHODS =================================
+    # ================================= INSTANCE API METHODS =================================
+
     def addEnrichment(self, enrichment_type: EnrichmentType, enrichment_data: dict,
                       album_position: PositionType, album_position_data: Optional[dict] = None)\
             -> t_tuple[Optional[Response], Optional[CoreEnrichmentItem]]:
@@ -145,6 +158,64 @@ class CoreAlbum(Printable):
         }
         response = self.gp.request(RequestType.POST, endpoint, json=payload)
         return response
+
+    def patch(self, mask_type: AlbumMaskType, field_value) -> Response:
+        """Update the album with the specified id. Only the id, title and coverPhotoMediaItemId fields of the album are read.
+        The album must have been created by the developer via the API and must be owned by the user.
+
+        Args:
+            mask_type (AlbumMaskType): _description_
+            field_value (_type_): _description_
+
+        Returns:
+            Response: _description_
+        """
+        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}"
+        payload = {
+            mask_type.value: field_value
+        }
+        params = {
+            "updateMask": mask_type.value
+        }
+        response = self.gp.request(
+            RequestType.PATCH, endpoint, json=payload, params=params)
+        return response
+
+    def share(self, isCollaborative: bool = True, isCommentable: bool = True) -> Response:
+        """share an album
+
+        Args:
+            isCollaborative (bool, optional): whether to allow other people to also edit the album. Defaults to True.
+            isCommentable (bool, optional): whether to allow other people to comment. Defaults to True.
+
+        Returns:
+            Response: _description_
+        """
+        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
+        body = {
+            "sharedAlbumOptions": {
+                "isCollaborative": isCollaborative,
+                "isCommentable": isCommentable
+            }
+        }
+        response = self.gp.request(
+            RequestType.POST, endpoint, json=body)
+        return response
+
+    def unshare(self) -> Response:
+        """make a shared album private
+
+        Returns:
+            Response: resulting response
+        """
+        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:unshare"
+        response = self.gp.request(
+            RequestType.POST,
+            endpoint,
+            HeaderType.DEFAULT
+        )
+        return response
+    # ================================= STATIC API METHODS =================================
 
     @staticmethod
     def create(gp: GooglePhotos, album_name: str) -> "CoreAlbum":
@@ -247,60 +318,3 @@ class CoreAlbum(Printable):
             if "albums" in j:
                 gen = (CoreAlbum._from_dict(gp, dct) for dct in j["albums"])
         return gen, token
-
-    def patch(self, mask_type: AlbumMaskType, field_value) -> Response:
-        """Update the album with the specified id. Only the id, title and coverPhotoMediaItemId fields of the album are read.
-        The album must have been created by the developer via the API and must be owned by the user.
-
-        Args:
-            mask_type (AlbumMaskType): _description_
-            field_value (_type_): _description_
-
-        Returns:
-            Response: _description_
-        """
-        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}"
-        payload = {
-            mask_type.value: field_value
-        }
-        params = {
-            "updateMask": mask_type.value
-        }
-        response = self.gp.request(
-            RequestType.PATCH, endpoint, json=payload, params=params)
-        return response
-
-    def share(self, isCollaborative: bool = True, isCommentable: bool = True) -> Response:
-        """share an album
-
-        Args:
-            isCollaborative (bool, optional): whether to allow other people to also edit the album. Defaults to True.
-            isCommentable (bool, optional): whether to allow other people to comment. Defaults to True.
-
-        Returns:
-            Response: _description_
-        """
-        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:addEnrichment"
-        body = {
-            "sharedAlbumOptions": {
-                "isCollaborative": isCollaborative,
-                "isCommentable": isCommentable
-            }
-        }
-        response = self.gp.request(
-            RequestType.POST, endpoint, json=body)
-        return response
-
-    def unshare(self) -> Response:
-        """make a shared album private
-
-        Returns:
-            Response: resulting response
-        """
-        endpoint = f"https://photoslibrary.googleapis.com/v1/albums/{self.id}:unshare"
-        response = self.gp.request(
-            RequestType.POST,
-            endpoint,
-            HeaderType.DEFAULT
-        )
-        return response

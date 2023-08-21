@@ -1,8 +1,7 @@
-from builtins import list as t_list
 import pathlib
 import math
-from threading import Thread, Semaphore
-from typing import Generator, List as t_list, Optional, Iterable
+from threading import Semaphore
+from typing import Generator, Optional, Iterable
 from queue import Queue
 from requests.models import Response  # pylint: disable=import-error
 from gp_wrapper.objects.core.gp import GooglePhotos
@@ -61,7 +60,7 @@ class MediaItem(CoreMediaItem):
         filters: Optional[SearchFilter] = None,
         orderBy: Optional[str] = None,
         tokens_to_use: int = math.inf,  # type:ignore
-        pre_fetch: bool = False
+        # pre_fetch: bool = False
     ) -> Generator["MediaItem", None, None]:
         """like CoreGPMediaItem.search but automatically converts the objects to the
         higher order class and automatically uses the tokens to get all objects
@@ -72,7 +71,7 @@ class MediaItem(CoreMediaItem):
             pre_fetch (Boolean): whether to non-blocking-ly fetch ALL available items using the tokens
                 Defaults to False.
         """
-        q: Queue[MediaItem] = Queue()
+        q: Queue[MediaItem] = Queue()  # pylint: disable=unsubscriptable-object
         sem = Semaphore(0)
         if not (0 < tokens_to_use):
             raise ValueError(
@@ -99,19 +98,19 @@ class MediaItem(CoreMediaItem):
                     else:
                         q.put(o)
                     sem.release()
-        if pre_fetch:
-            # TODO fix this part
-            raise NotImplementedError("pre_fetch is currently not supported")
-            t = Thread(target=inner_logic, args=(False,))
-            t.start()
-            with sem:
-                # re-add value that was used as a barrier
-                sem.release()
-                while not q.empty():
-                    with sem:
-                        yield q.get()
-        else:
-            yield from inner_logic()  # type:ignore
+        # if pre_fetch:
+        #     # _TODO fix this part
+        #     raise NotImplementedError("pre_fetch is currently not supported")
+        #     t = Thread(target=inner_logic, args=(False,))
+        #     t.start()
+        #     with sem:
+        #         # re-add value that was used as a barrier
+        #         sem.release()
+        #         while not q.empty():
+        #             with sem:
+        #                 yield q.get()
+        # else:
+        yield from inner_logic()  # type:ignore
 
     @staticmethod
     def all_media(gp: GooglePhotos) -> Generator["MediaItem", None, None]:

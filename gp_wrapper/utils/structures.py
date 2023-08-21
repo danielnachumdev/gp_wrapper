@@ -1,16 +1,15 @@
-import json
-import math
+import inspect
 from enum import Enum
 from datetime import datetime
-from typing import Optional, IO, Iterable
+from typing import Optional, IO, cast
+from types import FrameType
 from abc import ABC, abstractmethod
-from tqdm import tqdm  # type:ignore # pylint: disable=import-error
 import gp_wrapper
 from .helpers import get_python_version
 if get_python_version() < (3, 9):
-    from typing import List as t_list  # pylint:disable=ungrouped-imports
+    from typing import List as t_list, Tuple as t_tuple, Set as t_set  # pylint:disable=ungrouped-imports
 else:
-    from builtins import list as t_list
+    from builtins import list as t_list, tuple as t_tuple, set as t_set  # type:ignore
 Milliseconds = float
 Seconds = float
 MediaItemID = str
@@ -20,6 +19,80 @@ AlbumId = str
 Path = str
 NextPageToken = str
 Value = str
+
+
+class OnlyPrivateFieldsMeta(type):
+    """will modify a class's __setattr__ so that it's attributes will be
+    private and cannot be changed from outside using "dot notation"
+
+    An 'AttributeError' will be raised if an attribute will be set not using a class function.
+    """
+    @staticmethod
+    def _get_function_names(cls: type) -> t_set[str]:
+        res = set()
+        for kls in cls.mro():
+            if kls is object:
+                continue
+            res.update(list(kls.__dict__))
+        return res
+
+    @staticmethod
+    def _get_prev_frame(frame: Optional[FrameType]) -> Optional[FrameType]:
+        """Get the previous frame (caller's frame) in the call stack.
+
+        This function retrieves the frame that called the current frame in the Python call stack.
+
+        Args:
+            frame (Optional[FrameType]): The current frame for which to find the previous frame.
+
+        Returns:
+            Optional[FrameType]: The previous frame in the call stack, or None if it is not available.
+
+        Note:
+            If the input frame is None or not of type FrameType, the function returns None.
+        """
+        if frame is None:
+            return None
+        if not isinstance(frame, FrameType):
+            return None
+        frame = cast(FrameType, frame)
+        return frame.f_back
+
+    @staticmethod
+    def _get_caller_name(steps_back: int = 0) -> Optional[str]:
+        """returns the name caller of the function
+
+        Returns:
+            str: name of caller
+
+        USING THIS FUNCTION WHILE DEBUGGING WILL ADD ADDITIONAL FRAMES TO THE TRACEBACK
+        """
+        if not isinstance(steps_back, int):
+            raise TypeError("steps_back must be an int")
+        if steps_back < 0:
+            raise ValueError("steps_back must be a non-negative integer")
+        frame = OnlyPrivateFieldsMeta._get_prev_frame(
+            OnlyPrivateFieldsMeta._get_prev_frame(inspect.currentframe()))
+        if frame is None:
+            return None
+        frame = cast(FrameType, frame)
+        while steps_back > 0:
+            frame = OnlyPrivateFieldsMeta._get_prev_frame(frame)
+            if frame is None:
+                return None
+            frame = cast(FrameType, frame)
+            steps_back -= 1
+        return frame.f_code.co_name
+
+    def __new__(mcs, name: str, bases: t_tuple, namespace: dict):
+        def __setattr__(self, name, value):
+            caller = OnlyPrivateFieldsMeta._get_caller_name()
+            if caller in OnlyPrivateFieldsMeta._get_function_names(self.__class__):
+                return object.__setattr__(self, name, value)
+            raise AttributeError(
+                f"Attribute '{name}' of '{self.__class__.__name__}' is private and cannot be changed from outside")
+        namespace["__setattr__"] = __setattr__
+        return type(name, bases, namespace)
 
 
 class RequestType(Enum):
@@ -213,12 +286,6 @@ class SimpleMediaItem(Dictable, Printable):
         self.__uploadToken = uploadToken
         self.__fileName = fileName
 
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "fileName": self.fileName,
-    #         "uploadToken": self.uploadToken
-    #     }
-
     @property
     def fileName(self):
         """File name with extension of the media item. 
@@ -280,12 +347,6 @@ class NewMediaItem(Dictable, Printable):
         self.__description = description
         self.__simpleMediaItem = simpleMediaItem
 
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "description": self.description,
-    #         "simpleMediaItem": self.simpleMediaItem.to_dict()
-    #     }
-
     @property
     def description(self):
         return self.__description
@@ -334,13 +395,6 @@ class AlbumPosition(Dictable, Printable):
                 self.__relativeMediaItemId = relativeMediaItemId
             else:
                 self.__relativeEnrichmentItemId = relativeEnrichmentItemId
-
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "position": self.position,
-    #         "relativeMediaItemId": self.relativeMediaItemId,
-    #         "relativeEnrichmentItemId": self.relativeEnrichmentItemId
-    #     }
 
     @property
     def position(self):
@@ -404,13 +458,6 @@ class Status(Dictable, Printable):
         self.__code = code
         self.__details = details
 
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "message": self.message,
-    #         "code": self.code,
-    #         "details": self.details
-    #     }
-
     @property
     def message(self):
         return self.__message
@@ -458,13 +505,6 @@ class MediaItemResult(Dictable, Printable):
         self.__uploadToken = uploadToken
         self.__status = status
         self.__mediaItem = mediaItem
-
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "uploadToken": self.uploadToken,
-    #         "status": self.status,
-    #         "mediaItem": self.mediaItem
-    #     }
 
     @property
     def uploadToken(self):
@@ -573,12 +613,6 @@ class ContributorInfo(Dictable, Printable):
     @property
     def displayName(self) -> str:
         return self.__displayName
-
-    # def to_dict(self) -> dict:
-    #     return {
-    #         "profilePictureBaseUrl": self.profilePictureBaseUrl,
-    #         "displayName": self.displayName
-    #     }
 
 
 # class MultiPartEncoderWithProgress(MultipartEncoder):
