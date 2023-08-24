@@ -16,6 +16,14 @@ A-lot of well defined API inspired Classes and Enums to simplify the usage.
 ## Quick Start
 1. Create a [Google Cloud Console](https://console.cloud.google.com/) project
 2. Enable google photos API [here](https://console.cloud.google.com/apis/library/photoslibrary.googleapis.com)
+3. Fill information [here](https://console.cloud.google.com/apis/credentials/consent)
+    1.  Fill application name and detail
+    2. Apply scopes
+        1. https://www.googleapis.com/auth/photoslibrary,
+        2. https://www.googleapis.com/auth/photoslibrary.appendonly
+        3. https://www.googleapis.com/auth/photoslibrary.sharing
+        4. https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata
+    3. Add a google account as a Test User which will be able to use you project as an 'end user'
 3. Extract relevant data for [`client_secrets.json`](./READMES/client_secrets_example.json)
 2. `pip install gp_wrapper`
 3. See example [here](./READMES/example.md)
