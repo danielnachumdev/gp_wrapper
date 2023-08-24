@@ -3,6 +3,7 @@ data/
 tmp.py
 *.txt
 *client_secret*
+!READMES/client_secret_example.json
 *.zip
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -11,7 +11,7 @@ gp = GooglePhotos(CLIENT_SECRETS)
 album = Album.exists(gp, name="test")
 if not album:
     album = Album.create(gp, "test")
-token = MediaItem.upload_media(gp, "path_to_media _file.png")
+token = MediaItem.upload_media(gp, "path_to_media_file.png")
 items = MediaItem.batchCreate(
     gp,
     [
