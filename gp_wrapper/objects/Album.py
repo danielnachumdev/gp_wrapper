@@ -207,8 +207,10 @@ class Album(CoreAlbum):
         j = response.json()
         if "mediaItems" not in j:
             return []
+        res = []
         for dct in j["mediaItems"]:
-            yield MediaItem.from_dict(self.gp, dct)
+            res.append(MediaItem.from_dict(self.gp, dct))
+        return res
 
     def set_title(self, new_title: str) -> Response:
         """sets the title of an album

@@ -48,11 +48,11 @@ class DateFilter(Printable, Dictable):
                 "When creating a DateFilter, must supply at-least one of 'dates', 'ranges'")
 
         if dates:
-            if not (0 < len(dates) <= 5):
+            if not (0 < len(dates) <= 5):  # pylint: disable=unneeded-not,superfluous-parens
                 raise ValueError(
                     "A maximum of 5 dates can be included per request.")
         if ranges:
-            if not (0 < len(ranges) <= 5):
+            if not (0 < len(ranges) <= 5):  # pylint: disable=unneeded-not,superfluous-parens
                 raise ValueError(
                     "A maximum of 5 dates ranges can be included per request.")
         self.dates = dates

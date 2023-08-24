@@ -70,12 +70,12 @@ class ContentFilter(Printable, Dictable):
                 "When creating a ContentFilter, one must supply at-least one from 'includedContentCategories', 'excludedContentCategories'")
 
         if includedContentCategories:
-            if not (0 < len(includedContentCategories) < 10):
+            if not (0 < len(includedContentCategories) < 10):  # pylint: disable=unneeded-not,superfluous-parens
                 raise ValueError(
                     "There's a maximum of 10 includedContentCategories per request.")
 
         if excludedContentCategories:
-            if not (0 < len(excludedContentCategories) < 10):
+            if not (0 < len(excludedContentCategories) < 10): # pylint: disable=unneeded-not,superfluous-parens
                 raise ValueError(
                     "There's a maximum of 10 excludedContentCategories per request.")
         self.includedContentCategories = includedContentCategories

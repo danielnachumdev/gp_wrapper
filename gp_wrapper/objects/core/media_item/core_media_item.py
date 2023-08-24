@@ -122,8 +122,9 @@ class CoreMediaItem(Printable, OnlyPrivate):
             Generator[NewMediaItemResult, None, None]: A generator of wrapper objects representing
                 the contents of the response.
         """
-        # TODO: If you are creating a media item in a shared album where you are not the owner, you are not allowed to position the media item. Doing so will result in a BAD REQUEST error.
-        if not (0 <= len(list(newMediaItems)) <= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS):
+        # TODO: If you are creating a media item in a shared album where you are not the owner,
+        # you are not allowed to position the media item. Doing so will result in a BAD REQUEST error.
+        if not (0 <= len(list(newMediaItems)) <= MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS):  # pylint: disable=unneeded-not,superfluous-parens
             raise ValueError(
                 f"'newMediaItems' can only hold a maximum of {MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS} items per call")
         body: t_dict[str, Union[str, list, dict]] = {
@@ -251,7 +252,7 @@ class CoreMediaItem(Printable, OnlyPrivate):
         if albumId and filters:
             raise ValueError(
                 "'albumId' cannot be set in conjunction with 'filters'")
-        if not (0 < pageSize <= 100):
+        if not (0 < pageSize <= 100):  # pylint: disable=unneeded-not,superfluous-parens
             raise ValueError(
                 "'pageSize' must be a positive integer. maximum value: 100")
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
@@ -315,7 +316,7 @@ class CoreMediaItem(Printable, OnlyPrivate):
         Returns:
             tuple[list[dict], Optional[NextPageToken]]: _description_
         """
-        if not (0 < pageSize <= MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE):
+        if not (0 < pageSize <= MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE):  # pylint: disable=unneeded-not,superfluous-parens
             raise ValueError(
                 f"pageSize must be between 0 and {MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE}.\nsee https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems"

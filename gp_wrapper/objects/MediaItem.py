@@ -73,7 +73,7 @@ class MediaItem(CoreMediaItem):
         """
         q: Queue[MediaItem] = Queue()  # pylint: disable=unsubscriptable-object
         sem = Semaphore(0)
-        if not (0 < tokens_to_use):
+        if not (0 < tokens_to_use):  # pylint: disable=unneeded-not,superfluous-parens
             raise ValueError(
                 "'tokens_to_use' should be a positive integer")
 
@@ -166,6 +166,14 @@ class MediaItem(CoreMediaItem):
     # ================================= ADDITIONAL INSTANCE METHODS =================================
 
     def set_description(self, description: str) -> Response:
+        """sets the description to the MediaItem
+
+        Args:
+            description (str): desired description
+
+        Returns:
+            Response: resulting requests.Response object
+        """
         res = self.patch(MediaItemMaskTypes.DESCRIPTION, description)
         if res.status_code == 200:
             self.description = description

@@ -129,7 +129,6 @@ def memo(func):
 
 
 __all__ = [
-    # "declare",
     "split_iterable",
     "json_default",
     "slowdown",
