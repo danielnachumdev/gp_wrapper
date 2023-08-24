@@ -5,11 +5,11 @@ from typing import Optional, IO, cast
 from types import FrameType
 from abc import ABC, abstractmethod
 import gp_wrapper
-from .helpers import get_python_version
+from .helpers import get_python_version, memo
 if get_python_version() < (3, 9):
-    from typing import List as t_list, Tuple as t_tuple, Set as t_set  # pylint:disable=ungrouped-imports
+    from typing import List as t_list  # pylint:disable=ungrouped-imports
 else:
-    from builtins import list as t_list, tuple as t_tuple, set as t_set  # type:ignore
+    from builtins import list as t_list  # type:ignore
 Milliseconds = float
 Seconds = float
 MediaItemID = str
@@ -21,23 +21,98 @@ NextPageToken = str
 Value = str
 
 
-class OnlyPrivateFieldsMeta(type):
-    """will modify a class's __setattr__ so that it's attributes will be
-    private and cannot be changed from outside using "dot notation"
+# class OnlyPrivateFieldsMeta(type):
+#     """will modify a class's __setattr__ so that it's attributes will be
+#     private and cannot be changed from outside using "dot notation"
 
-    An 'AttributeError' will be raised if an attribute will be set not using a class function.
+#     An 'AttributeError' will be raised if an attribute will be set not using a class function.
+#     """
+#     @staticmethod
+#     def _get_function_names(cls: type) -> t_set[str]:
+#         res = set()
+#         for kls in cls.mro():
+#             if kls is object:
+#                 continue
+#             res.update(list(kls.__dict__))
+#         return res
+
+#     @staticmethod
+#     def _get_prev_frame(frame: Optional[FrameType]) -> Optional[FrameType]:
+#         """Get the previous frame (caller's frame) in the call stack.
+
+#         This function retrieves the frame that called the current frame in the Python call stack.
+
+#         Args:
+#             frame (Optional[FrameType]): The current frame for which to find the previous frame.
+
+#         Returns:
+#             Optional[FrameType]: The previous frame in the call stack, or None if it is not available.
+
+#         Note:
+#             If the input frame is None or not of type FrameType, the function returns None.
+#         """
+#         if frame is None:
+#             return None
+#         if not isinstance(frame, FrameType):
+#             return None
+#         frame = cast(FrameType, frame)
+#         return frame.f_back
+
+#     @staticmethod
+#     def _get_caller_name(steps_back: int = 0) -> Optional[str]:
+#         """returns the name caller of the function
+
+#         Returns:
+#             str: name of caller
+
+#         USING THIS FUNCTION WHILE DEBUGGING WILL ADD ADDITIONAL FRAMES TO THE TRACEBACK
+#         """
+#         if not isinstance(steps_back, int):
+#             raise TypeError("steps_back must be an int")
+#         if steps_back < 0:
+#             raise ValueError("steps_back must be a non-negative integer")
+#         frame = OnlyPrivateFieldsMeta._get_prev_frame(
+#             OnlyPrivateFieldsMeta._get_prev_frame(inspect.currentframe()))
+#         if frame is None:
+#             return None
+#         frame = cast(FrameType, frame)
+#         while steps_back > 0:
+#             frame = OnlyPrivateFieldsMeta._get_prev_frame(frame)
+#             if frame is None:
+#                 return None
+#             frame = cast(FrameType, frame)
+#             steps_back -= 1
+#         return frame.f_code.co_name
+
+#     def __new__(mcs, name: str, bases: t_tuple, namespace: dict):
+#         def __setattr__(self, name, value):
+#             caller = OnlyPrivateFieldsMeta._get_caller_name()
+#             if caller in OnlyPrivateFieldsMeta._get_function_names(self.__class__):
+#                 return object.__setattr__(self, name, value)
+#             raise AttributeError(
+#                 f"Attribute '{name}' of '{self.__class__.__name__}' is private and cannot be changed from outside")
+#         namespace["__setattr__"] = __setattr__
+#         return type(name, bases, namespace)
+
+class OnlyPrivate:
+    """will override __setattr__ to make instance's attributes private 
+    and so that they can be change only from inside functions
     """
-    @staticmethod
-    def _get_function_names(cls: type) -> t_set[str]:
+    @classmethod
+    @memo
+    def __get_function_names(cls, kls: type) -> set:
         res = set()
-        for kls in cls.mro():
-            if kls is object:
+        mro = kls.mro()
+        reversed_last_index = mro[::-1].index(cls)
+        last_index = len(mro)-reversed_last_index-1
+        for kls_ in mro[:last_index]:
+            if kls_ is cls:
                 continue
-            res.update(list(kls.__dict__))
+            res.update(list(kls_.__dict__))
         return res
 
     @staticmethod
-    def _get_prev_frame(frame: Optional[FrameType]) -> Optional[FrameType]:
+    def __get_prev_frame(frame: Optional[FrameType]) -> Optional[FrameType]:
         """Get the previous frame (caller's frame) in the call stack.
 
         This function retrieves the frame that called the current frame in the Python call stack.
@@ -59,7 +134,7 @@ class OnlyPrivateFieldsMeta(type):
         return frame.f_back
 
     @staticmethod
-    def _get_caller_name(steps_back: int = 0) -> Optional[str]:
+    def __get_caller_name(steps_back: int = 0) -> Optional[str]:
         """returns the name caller of the function
 
         Returns:
@@ -71,28 +146,25 @@ class OnlyPrivateFieldsMeta(type):
             raise TypeError("steps_back must be an int")
         if steps_back < 0:
             raise ValueError("steps_back must be a non-negative integer")
-        frame = OnlyPrivateFieldsMeta._get_prev_frame(
-            OnlyPrivateFieldsMeta._get_prev_frame(inspect.currentframe()))
+        frame = OnlyPrivate.__get_prev_frame(
+            OnlyPrivate.__get_prev_frame(inspect.currentframe()))
         if frame is None:
             return None
         frame = cast(FrameType, frame)
         while steps_back > 0:
-            frame = OnlyPrivateFieldsMeta._get_prev_frame(frame)
+            frame = OnlyPrivate.__get_prev_frame(frame)
             if frame is None:
                 return None
             frame = cast(FrameType, frame)
             steps_back -= 1
         return frame.f_code.co_name
 
-    def __new__(mcs, name: str, bases: t_tuple, namespace: dict):
-        def __setattr__(self, name, value):
-            caller = OnlyPrivateFieldsMeta._get_caller_name()
-            if caller in OnlyPrivateFieldsMeta._get_function_names(self.__class__):
-                return object.__setattr__(self, name, value)
-            raise AttributeError(
-                f"Attribute '{name}' of '{self.__class__.__name__}' is private and cannot be changed from outside")
-        namespace["__setattr__"] = __setattr__
-        return type(name, bases, namespace)
+    def __setattr__(self, name, value):
+        caller = OnlyPrivate.__get_caller_name()
+        if caller in OnlyPrivate.__get_function_names(self.__class__):
+            return object.__setattr__(self, name, value)
+        raise AttributeError(
+            f"Attribute '{name}' of '{self.__class__.__name__}' is private and cannot be changed from outside")
 
 
 class RequestType(Enum):

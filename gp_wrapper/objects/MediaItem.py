@@ -166,7 +166,10 @@ class MediaItem(CoreMediaItem):
     # ================================= ADDITIONAL INSTANCE METHODS =================================
 
     def set_description(self, description: str) -> Response:
-        return self.patch(MediaItemMaskTypes.DESCRIPTION, description)
+        res = self.patch(MediaItemMaskTypes.DESCRIPTION, description)
+        if res.status_code == 200:
+            self.description = description
+        return res
 
 
 __all__ = [

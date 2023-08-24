@@ -115,10 +115,24 @@ def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
     return deco
 
 
+def memo(func):
+    dct: dict = {}
+
+    def wrapper(*args, **kwargs):
+        if (args, *kwargs) in dct:
+            return dct[(args, *kwargs)]
+        res = func(*args, **kwargs)
+        dct[(args, *kwargs)] = res
+        return res
+
+    return wrapper
+
+
 __all__ = [
     # "declare",
     "split_iterable",
     "json_default",
     "slowdown",
-    "get_python_version"
+    "get_python_version",
+    "memo"
 ]

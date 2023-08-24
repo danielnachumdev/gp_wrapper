@@ -1,12 +1,11 @@
 import json
 from typing import Optional,  Callable
 import requests
-import tqdm
 from requests import Response
 from google.oauth2.credentials import Credentials  # type:ignore
 from google_auth_oauthlib.flow import InstalledAppFlow  # type:ignore
 import gp_wrapper.objects.core.media_item
-from ...utils import RequestType, Printable, HeaderType, ProgressBarInjector, ProgressBar, OnlyPrivateFieldsMeta
+from ...utils import RequestType, Printable, HeaderType, ProgressBarInjector, ProgressBar, OnlyPrivate
 from ...utils import EMPTY_PROMPT_MESSAGE, SCOPES, MEDIA_ITEMS_CREATE_ENDPOINT, get_python_version
 if get_python_version() < (3, 9):
     from typing import Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
@@ -14,7 +13,7 @@ else:
     from builtins import dict as t_dict  # type:ignore
 
 
-class GooglePhotos(Printable, metaclass=OnlyPrivateFieldsMeta):
+class GooglePhotos(Printable, OnlyPrivate):
     """A wrapper class over GooglePhotos API to get 
     higher level abstraction for easy use
     """

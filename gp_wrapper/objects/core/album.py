@@ -4,7 +4,7 @@ from .gp import GooglePhotos
 from .media_item import MediaItemID
 from .enrichment_item import CoreEnrichmentItem
 from ...utils import PositionType, EnrichmentType, RequestType, Printable, AlbumMaskType, HeaderType,\
-    OnlyPrivateFieldsMeta
+    OnlyPrivate
 from ...utils import AlbumId, NextPageToken
 from ...utils import get_python_version
 from ...utils import ALBUMS_ENDPOINT
@@ -14,7 +14,7 @@ else:
     from builtins import tuple as t_tuple, dict as t_dict  # type:ignore
 
 
-class CoreAlbum(Printable, metaclass=OnlyPrivateFieldsMeta):
+class CoreAlbum(Printable, OnlyPrivate):
     """the basic wrapper class over 'Album' object
      Args:
             gp (GooglePhotos): Google Photos object

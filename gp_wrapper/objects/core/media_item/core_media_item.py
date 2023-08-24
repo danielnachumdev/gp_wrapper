@@ -4,7 +4,7 @@ from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
-    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo, OnlyPrivateFieldsMeta
+    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo, OnlyPrivate
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown, get_python_version
@@ -19,7 +19,7 @@ MEDIA_ITEM_BATCH_CREATE_MAXIMUM_IDS: int = 50
 DEFAULT_QUOTA: int = 30
 
 
-class CoreMediaItem(Printable, metaclass=OnlyPrivateFieldsMeta):
+class CoreMediaItem(Printable, OnlyPrivate):
     """The core wrapper class over the 'MediaItem' object
 
     Args:
