@@ -2,18 +2,23 @@ from enum import Enum
 
 
 class RequestType(Enum):
+    """An inner use Enum to specify which types of request can be sent with the API
+    """
     GET = "get"
     POST = "post"
     PATCH = "patch"
 
 
 class HeaderType(Enum):
+    """An inner use Enum to specify which types of headers should be sent with requests
+    """
     DEFAULT = ""
     JSON = "json"
     OCTET = "octet-stream"
 
 
 class MimeType(Enum):
+    """An enum to specify the supported mime-types"""
     PNG = "image/png"
     JPEG = "image/jpeg"
     MP4 = "video/mp4"
@@ -48,12 +53,15 @@ class MediaItemMaskTypes(Enum):
 
 
 class AlbumMaskType(Enum):
+    """Enum to specify which fields are applicable regarding updatable fields in albums"""
     TITLE = "title"
     COVER_PHOTOS_MEDIA_ITEM_ID = "coverPhotoMediaItemId"
 
 
 class RelativeItemType(Enum):
-    relativeMediaItemId = "relativeMediaItemId",
+    """Enum to specify which type of relativity the PositionType refers to if applicable
+    """
+    relativeMediaItemId = "relativeMediaItemId"
     relativeEnrichmentItemId = "relativeEnrichmentItemId"
 
 

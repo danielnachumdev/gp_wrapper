@@ -1,7 +1,7 @@
 import inspect
 from typing import Optional, IO, cast
 from types import FrameType
-from abc import ABC, abstractmethod
+from abc import ABC
 from ..helpers import memo
 
 
@@ -152,9 +152,12 @@ class OnlyPrivate:
 
 
 class IdEquality:
+    """A parent class implementing hashing and equality of objects based on their 'id' field value
+    """
+
     def __eq__(self, other: object) -> bool:
         if hasattr(self, "id"):
-            if type(self) == type(other):
+            if type(self) == type(other):  # pylint: disable=unidiomatic-typecheck
                 return self.id == other.id  # type:ignore
         return False
 
@@ -192,6 +195,7 @@ class IndentedWriter2:
         stream.write(self.buffer)
 
     def add_from(self, s: str) -> None:
+        """Adds text to inner buffer from supplied string"""
         for i, line in enumerate(s.splitlines()):
             if i == 0:
                 self.buffer += line+"\n"
@@ -224,6 +228,9 @@ class IndentedWriter2:
 
 
 class Printable:
+    """A parent class to supply a default implementation of __str__ so 
+    that class instances will print nicely"""
+
     def __str__(self) -> str:
         w = IndentedWriter2(indent_value=" "*4)
         # w.write(f"{self.__class__.__name__} ", end="")
@@ -248,11 +255,14 @@ class Printable:
 
 
 class Dictable(ABC):
-    @staticmethod
-    @abstractmethod
-    def from_dict(dct: dict):
+    """an abstract class to mark an object that it supports the functions
+    'to_dict' and 'from_dict' for other use in the library
+    """
+    @classmethod
+    def from_dict(cls, dct: dict):
         """creates an object from relevant dict
         """
+        return cls(**dct)
 
     def to_dict(self) -> dict:
         """returns a dictionary representation of object"""

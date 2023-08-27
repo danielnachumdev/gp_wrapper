@@ -160,7 +160,8 @@ class CoreAlbum(Printable, OnlyPrivate):
         return response
 
     def patch(self, mask_type: AlbumMaskType, field_value) -> Response:
-        """Update the album with the specified id. Only the id, title and coverPhotoMediaItemId fields of the album are read.
+        """Update the album with the specified id. 
+        Only the id, title and coverPhotoMediaItemId fields of the album are read.
         The album must have been created by the developer via the API and must be owned by the user.
 
         Args:

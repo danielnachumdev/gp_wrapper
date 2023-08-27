@@ -55,8 +55,14 @@ class ContentFilter(Printable, Dictable):
     A category that appears in includedContentCategories must not appear in excludedContentCategories.
 
     Args:
-        includedContentCategories (Optional[list[ContentCategory]], optional): The set of categories to be included in the media item search results. The items in the set are ORed. There's a maximum of 10 includedContentCategories per request. Defaults to None.
-        excludedContentCategories (Optional[list[ContentCategory]], optional): The set of categories which are not to be included in the media item search results. The items in the set are ORed. There's a maximum of 10 excludedContentCategories per request. Defaults to None.
+        includedContentCategories (Optional[list[ContentCategory]], optional): 
+            The set of categories to be included in the media item search results.
+            The items in the set are ORed. There's a maximum of 10 includedContentCategories per request. 
+            Defaults to None.
+        excludedContentCategories (Optional[list[ContentCategory]], optional): 
+            The set of categories which are not to be included in the media item search results.
+            The items in the set are ORed. There's a maximum of 10 excludedContentCategories per request.
+            Defaults to None.
 
     Raises:
         ValueError: if not values are supplied
@@ -64,10 +70,15 @@ class ContentFilter(Printable, Dictable):
         ValueError: if 'excludedContentCategories' has more than 10 values
     """
 
-    def __init__(self, includedContentCategories: Optional[t_list[ContentCategory]] = None, excludedContentCategories: Optional[t_list[ContentCategory]] = None) -> None:
+    def __init__(
+        self,
+        includedContentCategories: Optional[t_list[ContentCategory]] = None,
+        excludedContentCategories: Optional[t_list[ContentCategory]] = None
+    ) -> None:
         if not includedContentCategories and not excludedContentCategories:
             raise ValueError(
-                "When creating a ContentFilter, one must supply at-least one from 'includedContentCategories', 'excludedContentCategories'")
+                "When creating a ContentFilter, one must supply at-least one from "
+                "'includedContentCategories', 'excludedContentCategories'")
 
         if includedContentCategories:
             if not (0 < len(includedContentCategories) < 10):  # pylint: disable=unneeded-not,superfluous-parens
@@ -75,7 +86,7 @@ class ContentFilter(Printable, Dictable):
                     "There's a maximum of 10 includedContentCategories per request.")
 
         if excludedContentCategories:
-            if not (0 < len(excludedContentCategories) < 10): # pylint: disable=unneeded-not,superfluous-parens
+            if not (0 < len(excludedContentCategories) < 10):  # pylint: disable=unneeded-not,superfluous-parens
                 raise ValueError(
                     "There's a maximum of 10 excludedContentCategories per request.")
         self.includedContentCategories = includedContentCategories

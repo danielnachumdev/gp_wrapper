@@ -59,7 +59,8 @@ class CoreMediaItem(Printable, OnlyPrivate):
         Args:
             gp (GooglePhotos): Google Photos Object
             media (Path): the path to the media
-            tqdm_position (Optional[int]): if this value is supplied then a tqdm progress bar will be displayed at the specified position showing the progress of the upload
+            pbar (Optional[ProgressBar]): An instance of a class implementing ProgressBar to show an 
+                optional progress bar while uploading. tqdm is okay.
 
         Raises:
             HTTPError: If the HTTP request has failed
@@ -67,19 +68,19 @@ class CoreMediaItem(Printable, OnlyPrivate):
         Returns:
             UploadToken: the upload token to pass to be used in other functions
         """
-        image_data = open(media, 'rb').read()
         header_type = HeaderType.JSON
-
         # TODO add more options
         if pathlib.Path(media).suffix.lower() in {".mov", ".mp4", ".wmv"}:
             header_type = HeaderType.OCTET
-        response = gp.request(
-            RequestType.POST,
-            UPLOAD_MEDIA_ITEM_ENDPOINT,
-            header_type=header_type,
-            pbar=pbar,
-            data=image_data
-        )
+
+        with open(media, 'rb') as data_stream:
+            response = gp.request(
+                RequestType.POST,
+                UPLOAD_MEDIA_ITEM_ENDPOINT,
+                header_type=header_type,
+                pbar=pbar,
+                data=data_stream.read()
+            )
         response.raise_for_status()
         token = response.content.decode('utf-8')
         return token
@@ -235,9 +236,12 @@ class CoreMediaItem(Printable, OnlyPrivate):
             orderBy (Optional[str], optional): An optional field to specify the sort order of the search results.
                 The orderBy field only works when a dateFilter is used. 
                 When this field is not specified, results are displayed newest first, oldest last by their creationTime. 
-                Providing MediaMetadata.creation_time displays search results in the opposite order, oldest first then newest last. 
-                To display results newest first then oldest last, include the desc argument as follows: MediaMetadata.creation_time desc.
-                The only additional filters that can be used with this parameter are includeArchivedMedia and excludeNonAppCreatedData. 
+                Providing MediaMetadata.creation_time displays search results in the 
+                    opposite order, oldest first then newest last. 
+                To display results newest first then oldest last, include the desc
+                    argument as follows: MediaMetadata.creation_time desc.
+                The only additional filters that can be used with this parameter are
+                    includeArchivedMedia and excludeNonAppCreatedData. 
                 No other filters are supported. Defaults to None.
 
         Raises:
@@ -304,7 +308,8 @@ class CoreMediaItem(Printable, OnlyPrivate):
             gp (GooglePhotos): Google Photos object
             pageSize (int, optional): Maximum number of media items to return in the response. 
                 Fewer media items might be returned than the specified number. 
-                The default pageSize is MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE, the maximum is MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE. Defaults to MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE.
+                The default pageSize is MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE, 
+                the maximum is MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE. Defaults to MEDIA_ITEM_LIST_DEFAULT_PAGE_SIZE.
             pageToken (Optional[str], optional): A continuation token to get the next page of the results. 
                 Adding this to the request returns the rows after the pageToken. 
                 The pageToken should be the value returned in the nextPageToken parameter in the 
@@ -318,7 +323,8 @@ class CoreMediaItem(Printable, OnlyPrivate):
         """
         if not (0 < pageSize <= MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE):  # pylint: disable=unneeded-not,superfluous-parens
             raise ValueError(
-                f"pageSize must be between 0 and {MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE}.\nsee https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
+                f"pageSize must be between 0 and {MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE}.\n"
+                "see https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list#query-parameters")
         endpoint = "https://photoslibrary.googleapis.com/v1/mediaItems"
         params: dict = {
             "pageSize": pageSize

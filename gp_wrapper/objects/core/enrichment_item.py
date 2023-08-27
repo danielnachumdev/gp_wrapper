@@ -2,7 +2,10 @@ import json
 
 
 class CoreEnrichmentItem:
-    def __init__(self, id: str) -> None:
+    """A wrapper class for the EnrichmentItem object
+    """
+
+    def __init__(self, id: str) -> None:  # pylint: disable=redefined-builtin
         self.id = id
 
     def __str__(self) -> str:

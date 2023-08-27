@@ -5,6 +5,11 @@ from tqdm import tqdm
 
 
 class ProgressBar(ABC):
+    """An interface
+
+    Args:
+        ABC (_type_): _description_
+    """
     @abstractmethod
     def __init__(self, total, position: int = 0, unit="it", **kwargs) -> None:
         self.total = total
@@ -12,13 +17,19 @@ class ProgressBar(ABC):
         self.unit = unit
 
     @abstractmethod
-    def update(self, amount: float = 1) -> None: ...
+    def update(self, amount: float = 1) -> None:
+        """A function to update the progress-bar's value by a positive relative amount
+        """
 
     @abstractmethod
-    def write(self, *args, sep=" ", end="\n") -> None: ...
+    def write(self, *args, sep=" ", end="\n") -> None:
+        """A function to write additional text with the progress bar
+        """
 
     @abstractmethod
-    def reset(self) -> None: ...
+    def reset(self) -> None:
+        """A function to reset the progress-bar's progress
+        """
 
 
 ProgressBar.register(tqdm)

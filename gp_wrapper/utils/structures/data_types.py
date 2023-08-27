@@ -90,20 +90,6 @@ class NewMediaItem(Dictable, Printable):
         )
 
     def __init__(self, description: str, simpleMediaItem: SimpleMediaItem) -> None:
-        """_summary_
-
-        Args:
-            description (str): Description of the media item. 
-            This is shown to the user in the item's info section in the Google Photos app. 
-            Must be shorter than 1000 characters. Only include text written by users. 
-            Descriptions should add context and help users understand media. 
-            Do not include any auto-generated strings such as filenames, tags, and other metadata.
-            simpleMediaItem (SimpleMediaItem): A new media item that has been uploaded via the included uploadToken.
-
-        Raises:
-            ValueError: if description is more than 1000 characters long
-        """
-
         if description:
             if len(description) > 1000:
                 raise ValueError(
@@ -113,10 +99,14 @@ class NewMediaItem(Dictable, Printable):
 
     @property
     def description(self):
+        """returns the NewMediaItem's description
+        """
         return self.__description
 
     @property
     def simpleMediaItem(self):
+        """returns the NewMediaItem's SimpleMediaItem
+        """
         return self.__simpleMediaItem
 
 
@@ -200,14 +190,20 @@ class Status(Dictable, Printable):
 
     @property
     def message(self):
+        """returns the Status's message
+        """
         return self.__message
 
     @property
     def code(self):
+        """returns the Status's code
+        """
         return self.__code
 
     @property
     def details(self):
+        """returns the Status's details
+        """
         return self.__details
 
 
@@ -306,22 +302,32 @@ class MediaMetadata(Dictable, Printable):
 
     @property
     def creationTime(self):
+        """returns the MediaMetadata's creatingTime field
+        """
         return self.__creationTime
 
     @property
     def width(self):
+        """returns the MediaMetadata's width field
+        """
         return self.__width
 
     @property
     def height(self):
+        """returns the MediaMetadata's height field
+        """
         return self.__height
 
     @property
     def photo(self):
+        """returns the MediaMetadata's photo field
+        """
         return self.__photo
 
     @property
     def video(self):
+        """returns the MediaMetadata's video field
+        """
         return self.__video
 
 
@@ -348,10 +354,14 @@ class ContributorInfo(Dictable, Printable):
 
     @property
     def profilePictureBaseUrl(self) -> str:
+        """returns the ContributorInfo's profilePictureBaseUrl field
+        """
         return self.__profilePictureBaseUrl
 
     @property
     def displayName(self) -> str:
+        """returns the ContributorInfo's displayName field
+        """
         return self.__displayName
 
 

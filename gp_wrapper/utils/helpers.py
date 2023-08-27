@@ -28,11 +28,6 @@ def get_python_version() -> t_tuple[int, int, int]:
     return _get_python_version_untyped()  # type:ignore
 
 
-if get_python_version() < (3, 9):
-    from typing_extensions import ParamSpec
-else:
-    from typing import ParamSpec  # type:ignore
-P = ParamSpec("P")
 T = TypeVar("T")
 
 
@@ -83,7 +78,7 @@ def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
     if not isinstance(interval, (int, float)):
         raise ValueError("minimal_interval_duration must be a number")
 
-    def deco(func: Callable[P, T]) -> Callable[P, T]:
+    def deco(func: Callable) -> Callable:
         # q: Queue = Queue()
         index = 0
         # lock = Lock()
@@ -92,7 +87,7 @@ def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
         # heap = MinHeap()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> T:
+        def wrapper(*args, **kwargs):
             nonlocal index, prev_start
             # =============== THREAD SAFETY =============
             # with lock:
@@ -116,6 +111,8 @@ def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
 
 
 def memo(func):
+    """memoizes a function
+    """
     dct: dict = {}
 
     def wrapper(*args, **kwargs):

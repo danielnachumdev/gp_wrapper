@@ -7,6 +7,7 @@ else:
 
 
 class MediaType(Enum):
+    """An Enum to specify the available Media types to use as a filter"""
     ALL_MEDIA = "ALL_MEDIA"
     VIDEO = "VIDEO"
     PHOTO = "PHOTO"
@@ -20,7 +21,8 @@ class MediaTypeFilter(Printable, Dictable):
     def __init__(self, mediaTypes: t_list[MediaType]) -> None:
         if len(mediaTypes) != 1:
             raise ValueError(
-                "This field should be populated with only one media type. If you specify multiple media types, it results in an error.")
+                "This field should be populated with only one media type. "
+                "If you specify multiple media types, it results in an error.")
         self.mediaTypes = mediaTypes
 
     def to_dict(self) -> dict:

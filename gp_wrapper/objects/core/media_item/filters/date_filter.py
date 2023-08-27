@@ -7,6 +7,13 @@ else:
 
 
 class Date(Printable, Dictable):
+    """A wrapper class over Date object
+    Args:
+        year (int): 
+        month (int): 
+        day (int): 
+    """
+
     def __init__(self, year: int, month: int, day: int) -> None:
         self.year = year
         self.month = month
@@ -17,6 +24,12 @@ class Date(Printable, Dictable):
 
 
 class DateRange(Printable, Dictable):
+    """A wrapper class to specify a range of dates to use as a filter
+    Args:
+        startDate (Date): the start date of the range
+        endDate (Date): the end date of the range
+    """
+
     def __init__(self, startDate: Date, endDate: Date) -> None:
         self.startDate = startDate
         self.endDate = endDate
@@ -38,8 +51,10 @@ class DateFilter(Printable, Dictable):
     Google Photos server upload time is not used as a fallback in this case.
 
     Args:
-        dates (Optional[list[Date]], optional): List of dates that match the media items' creation date. A maximum of 5 dates can be included per request.. Defaults to None.
-        ranges (Optional[list[DateRange]], optional): List of dates ranges that match the media items' creation date. A maximum of 5 dates ranges can be included per request. Defaults to None.
+        dates (Optional[list[Date]], optional): List of dates that match the media items' creation date. 
+            A maximum of 5 dates can be included per request. Defaults to None.
+        ranges (Optional[list[DateRange]], optional): List of dates ranges that match the media items' creation date. 
+            A maximum of 5 dates ranges can be included per request. Defaults to None.
     """
 
     def __init__(self, dates: Optional[t_list[Date]] = None, ranges: Optional[t_list[DateRange]] = None) -> None:

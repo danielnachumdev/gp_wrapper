@@ -50,6 +50,15 @@ class MediaItem(CoreMediaItem):
 
     @staticmethod
     def from_dict(gp: GooglePhotos, dct: dict) -> "MediaItem":
+        """creates a MediaItem from a dictionary containing fields with the same names
+
+        Args:
+            gp (GooglePhotos): Google Photos object
+            dct (dict): supplied dict
+
+        Returns:
+            MediaItem: resulting object
+        """
         return MediaItem._from_core(MediaItem._from_dict(gp, dct))
 
     @staticmethod
@@ -114,6 +123,11 @@ class MediaItem(CoreMediaItem):
 
     @staticmethod
     def all_media(gp: GooglePhotos) -> Generator["MediaItem", None, None]:
+        """uses MediaItem.list under the hood to pull all media
+
+        Yields:
+            Generator[MediaItem, None, None]: the resulting objects
+        """
         lst, token = MediaItem.list(
             gp, MEDIA_ITEM_LIST_MAXIMUM_PAGE_SIZE, None)
         yield from lst
@@ -124,6 +138,11 @@ class MediaItem(CoreMediaItem):
 
     @staticmethod
     def add_to_library(gp: GooglePhotos, paths: Iterable[Path]) -> t_list[Optional["MediaItem"]]:
+        """a higher order function to add media to the library without needing to use lower-end API functions
+
+        Returns:
+            list[Optional[MediaItem]]: list of resulting objects for further use
+        """
         items: t_list[NewMediaItem] = []
         for path in paths:
             token = MediaItem.upload_media(gp, path)
