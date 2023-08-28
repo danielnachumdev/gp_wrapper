@@ -110,6 +110,11 @@ def main(ver: str):
     # # twine upload dist/...
     ret, stdout, stderr = cm("wt.exe",
                              "twine", "upload", "--config-file", "./.pypirc", f"./dist/{PACKAGE}-{ver}.tar.gz")
+    if ret == 0:
+        git(version)
+        print("DONE")
+    else:
+        print("twine failed")
 
 
 def pytest() -> bool:
@@ -190,8 +195,7 @@ if __name__ == "__main__":
             f"Please supply a new version number (LATEST = {get_latest()}): ")
         if re.match(VERSION_PATTERN, version):
             main(version)
-            git(version)
-            print("DONE")
+
         else:
             print("invalid version. example 1.0.5.20")
 __all__: list = []
