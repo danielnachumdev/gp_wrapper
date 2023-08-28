@@ -23,6 +23,7 @@ class MimeType(Enum):
     JPEG = "image/jpeg"
     MP4 = "video/mp4"
     MOV = "video/quicktime"
+    WMV = "x-ms-asf"
 
 
 class PositionType(Enum):

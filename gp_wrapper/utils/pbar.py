@@ -4,17 +4,22 @@ from abc import ABC, abstractmethod
 from tqdm import tqdm
 
 
+DEFAULT_BAR_FORMAT = "{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}"
+
+
 class ProgressBar(ABC):
     """An interface
 
     Args:
         ABC (_type_): _description_
     """
+
     @abstractmethod
-    def __init__(self, total, position: int = 0, unit="it", **kwargs) -> None:
+    def __init__(self, total, position: int = 0, unit="it", bar_format: str = DEFAULT_BAR_FORMAT, **kwargs) -> None:
         self.total = total
         self.position = position
         self.unit = unit
+        self.bar_format = bar_format
 
     @abstractmethod
     def update(self, amount: float = 1) -> None:
@@ -69,6 +74,7 @@ class ProgressBarInjector:
         update_amount = total/num_of_chunks
         self.pbar.unit = unit
         self.pbar.total = total
+        self.pbar.bar_format = DEFAULT_BAR_FORMAT
         for chunk in chunks:
             yield chunk
             self.pbar.update(update_amount)

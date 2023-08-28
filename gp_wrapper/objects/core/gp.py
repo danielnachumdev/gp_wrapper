@@ -34,6 +34,7 @@ class GooglePhotos(Printable, OnlyPrivate):
             header_type: HeaderType = HeaderType.JSON,
             # mime_type: Optional[MimeType] = None,
             pbar: Optional[ProgressBar] = None,
+            additional_headers: Optional[dict] = None,
             **kwargs
     ) -> Response:
         """core request function to handle request for all other classes
@@ -49,6 +50,9 @@ class GooglePhotos(Printable, OnlyPrivate):
         headers: dict = {"Authorization": f"Bearer {self.credentials.token}"}
         if header_type != HeaderType.DEFAULT:
             headers["Content-Type"] = f"application/{header_type.value}"
+
+        if additional_headers:
+            headers.update(additional_headers)
 
         if pbar is not None:
             kwargs['data'] = \

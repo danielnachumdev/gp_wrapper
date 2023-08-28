@@ -4,7 +4,7 @@ from requests.models import Response  # pylint: disable=import-error
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
-    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo, OnlyPrivate
+    MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo, OnlyPrivate, MimeType
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
 from ....utils import slowdown, get_python_version
@@ -70,16 +70,27 @@ class CoreMediaItem(Printable, OnlyPrivate):
         """
         header_type = HeaderType.JSON
         # TODO add more options
-        if pathlib.Path(media).suffix.lower() in {".mov", ".mp4", ".wmv"}:
+        file_extension = pathlib.Path(media).suffix.lower()
+        additional_headers: dict = {
+            "X-Goog-Upload-Protocol": "raw"
+        }
+        SUPPORTED_VIDEO_FILE_TYPES = {".mov", ".mp4", ".wmv"}
+        if file_extension in SUPPORTED_VIDEO_FILE_TYPES:
             header_type = HeaderType.OCTET
-
+            if file_extension == ".mov":
+                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MOV.value
+            if file_extension == ".mp4":
+                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
+            if file_extension == ".wmv":
+                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.WMV.value
         with open(media, 'rb') as data_stream:
             response = gp.request(
                 RequestType.POST,
                 UPLOAD_MEDIA_ITEM_ENDPOINT,
                 header_type=header_type,
                 pbar=pbar,
-                data=data_stream.read()
+                data=data_stream.read(),
+                additional_headers=additional_headers
             )
         response.raise_for_status()
         token = response.content.decode('utf-8')

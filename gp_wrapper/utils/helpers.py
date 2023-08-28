@@ -28,6 +28,11 @@ def get_python_version() -> t_tuple[int, int, int]:
     return _get_python_version_untyped()  # type:ignore
 
 
+if get_python_version() < (3, 9):
+    from typing_extensions import ParamSpec
+else:
+    from typing import ParamSpec  # type:ignore #pylint: disable=ungrouped-imports
+P = ParamSpec("P")
 T = TypeVar("T")
 
 
@@ -78,26 +83,13 @@ def slowdown(interval: ForwardRef("Seconds")):  # type:ignore
     if not isinstance(interval, (int, float)):
         raise ValueError("minimal_interval_duration must be a number")
 
-    def deco(func: Callable) -> Callable:
-        # q: Queue = Queue()
+    def deco(func: Callable[P, T]) -> Callable[P, T]:  # type:ignore
         index = 0
-        # lock = Lock()
-        # prev_duration: float = 0
         prev_start: float = -float("inf")
-        # heap = MinHeap()
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> T:
             nonlocal index, prev_start
-            # =============== THREAD SAFETY =============
-            # with lock:
-            #     current_index = index
-            #     index += 1
-            #     heap.push(current_index)
-            # # maybe need to min(x,x-1)
-            # # tasks_before_me = heap.peek()-current_index
-            # # time.sleep(tasks_before_me*minimal_interval_duration)
-
             start = time.time()
             time_passed: Milliseconds = (start-prev_start)/1000
             time_to_wait: Seconds = interval-time_passed
