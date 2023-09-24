@@ -8,3 +8,4 @@ google-auth-oauthlib
 twine
 types-tqdm 
 tqdm
+moviepy

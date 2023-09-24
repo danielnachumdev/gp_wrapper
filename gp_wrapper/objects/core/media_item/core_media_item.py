@@ -1,6 +1,8 @@
+import os
 import pathlib
 from typing import Iterable, Optional, Union, Generator
 from requests.models import Response  # pylint: disable=import-error
+import moviepy.editor as moviepy  # type:ignore
 from .filters import SearchFilter
 from ..gp import GooglePhotos
 from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaItem,\
@@ -32,7 +34,9 @@ class CoreMediaItem(Printable, OnlyPrivate):
         baseUrl (str, optional): ?. Defaults to "".
         description (str, optional): media's description. Defaults to "".
     """
+    SUPPORTED_VIDEO_FILE_TYPES = {".mov", ".mp4", ".wmv"}
     # ================================= STATIC HELPER METHODS =================================
+
     @staticmethod
     def _from_dict(gp: GooglePhotos, dct: dict) -> "CoreMediaItem":
         return CoreMediaItem(
@@ -74,16 +78,18 @@ class CoreMediaItem(Printable, OnlyPrivate):
         additional_headers: dict = {
             "X-Goog-Upload-Protocol": "raw"
         }
-        SUPPORTED_VIDEO_FILE_TYPES = {".mov", ".mp4", ".wmv"}
-        if file_extension in SUPPORTED_VIDEO_FILE_TYPES:
+        new_path = media  # assign default value
+        if file_extension in CoreMediaItem.SUPPORTED_VIDEO_FILE_TYPES:
+            if file_extension != '.mp4':
+                if pbar is not None:
+                    pbar.write("Converting video to .mp4")
+                    clip = moviepy.VideoFileClip(media)
+                p = pathlib.Path(media)
+                new_path = os.path.join(p.parent, f'{p.stem}.mp4')
+                clip.write_videofile(new_path)
             header_type = HeaderType.OCTET
-            if file_extension == ".mov":
-                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MOV.value
-            if file_extension == ".mp4":
-                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
-            if file_extension == ".wmv":
-                additional_headers["X-Goog-Upload-Content-Type"] = MimeType.WMV.value
-        with open(media, 'rb') as data_stream:
+            additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
+        with open(new_path, 'rb') as data_stream:
             response = gp.request(
                 RequestType.POST,
                 UPLOAD_MEDIA_ITEM_ENDPOINT,
