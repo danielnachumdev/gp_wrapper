@@ -81,11 +81,11 @@ class CoreMediaItem(Printable, OnlyPrivate):
         new_path = media  # assign default value
         if file_extension in CoreMediaItem.SUPPORTED_VIDEO_FILE_TYPES:
             if file_extension != '.mp4':
-                if pbar is not None:
-                    pbar.write("Converting video to .mp4")
-                    clip = moviepy.VideoFileClip(media)
                 p = pathlib.Path(media)
                 new_path = os.path.join(p.parent, f'{p.stem}.mp4')
+                if pbar is not None:
+                    pbar.write(f"Video is not MP4. Creating {new_path}")
+                    clip = moviepy.VideoFileClip(media)
                 clip.write_videofile(new_path)
             header_type = HeaderType.OCTET
             additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
