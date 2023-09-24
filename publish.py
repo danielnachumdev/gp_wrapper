@@ -108,7 +108,7 @@ def main(ver: str):
         exit()
     print("Created dist successfully")
     # # twine upload dist/...
-    ret, stdout, stderr = cm("wt.exe", "twine", "-m",
+    ret, stdout, stderr = cm("wt.exe", "python", "-m",
                              "twine", "upload", "--config-file", "./.pypirc", f"./dist/{PACKAGE}-{ver}.tar.gz")
     if ret == 0:
         git(version)
