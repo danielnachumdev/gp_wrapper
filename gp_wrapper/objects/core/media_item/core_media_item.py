@@ -83,10 +83,14 @@ class CoreMediaItem(Printable, OnlyPrivate):
             if file_extension != '.mp4':
                 p = pathlib.Path(media)
                 new_path = os.path.join(p.parent, f'{p.stem}.mp4')
-                if pbar is not None:
-                    pbar.write(f"Video is not MP4. Creating {new_path}")
-                    clip = moviepy.VideoFileClip(media)
-                clip.write_videofile(new_path)
+                if not os.path.exists(new_path):
+                    if pbar is not None:
+                        pbar.write(
+                            f"Video is not MP4. Creating {new_path}."
+                            "\nThis may take a while dependint on the length of the video"
+                        )
+                        clip = moviepy.VideoFileClip(media)
+                    clip.write_videofile(new_path, verbose=False, logger=None)
             header_type = HeaderType.OCTET
             additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
         with open(new_path, 'rb') as data_stream:
