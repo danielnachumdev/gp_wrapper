@@ -9,7 +9,7 @@ from ....utils import MediaItemMaskTypes, RequestType, AlbumPosition, NewMediaIt
     MediaItemResult, MediaMetadata, Printable, HeaderType, ProgressBar, ContributorInfo, OnlyPrivate, MimeType
 from ....utils import MediaItemID, AlbumId, Path, NextPageToken, UploadToken
 from ....utils import UPLOAD_MEDIA_ITEM_ENDPOINT, MEDIA_ITEMS_CREATE_ENDPOINT
-from ....utils import slowdown, get_python_version
+from ....utils import slowdown, get_python_version, set_file_time, get_file_time, FileTime
 if get_python_version() < (3, 9):
     from typing import List as t_list, Tuple as t_tuple, Dict as t_dict  # pylint: disable=ungrouped-imports,redefined-builtin
 else:
@@ -87,10 +87,13 @@ class CoreMediaItem(Printable, OnlyPrivate):
                     if pbar is not None:
                         pbar.write(
                             f"Video is not MP4. Creating {new_path}."
-                            "\nThis may take a while dependint on the length of the video"
+                            "\nThis may take a while depending on the length of the video"
                         )
                         clip = moviepy.VideoFileClip(media)
                     clip.write_videofile(new_path, verbose=False, logger=None)
+                    ft = get_file_time(media)
+                    set_file_time(new_path, FileTime(
+                        creation=ft.creation, access=ft.creation, modification=ft.creation))
             header_type = HeaderType.OCTET
             additional_headers["X-Goog-Upload-Content-Type"] = MimeType.MP4.value
         with open(new_path, 'rb') as data_stream:
