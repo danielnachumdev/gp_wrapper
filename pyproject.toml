@@ -9,6 +9,7 @@ authors = [
 ]
 dependencies = ['google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib', 'requests', 'tqdm', 'moviepy']
 keywords = ['functions', 'methods', 'classes', 'API']
+license = { file = "LICENCE" }
 description = "A Google Photos API wrapper library"
 readme = "README.md"
 requires-python = ">=3.8.0"
