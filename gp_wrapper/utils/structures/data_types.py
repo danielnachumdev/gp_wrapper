@@ -294,7 +294,10 @@ class MediaMetadata(Dictable, Printable):
         video: Optional[dict] = None
     ) -> None:
         FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-        self.__creationTime: datetime = datetime.strptime(creationTime, FORMAT)
+        try:
+            self.__creationTime: datetime = datetime.strptime(creationTime, FORMAT)
+        except ValueError:
+            self.__creationTime: datetime = datetime.strptime(creationTime, "%Y-%m-%dT%H:%M:%S.%fZ")
         self.__width: Optional[int] = int(width) if width else None
         self.__height: Optional[int] = int(height) if height else None
         self.__photo = photo
